@@ -1,0 +1,20 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing
+.pytest_cache/
+
+# Databases & runtime logs
+*.db-shm
+*.db-wal
+surfaceai.db
+
+# Virtual environments
+venv/
+env/
+.env
+
+# Large dataset directory (downloaded separately)
+data/NEU-CLS/

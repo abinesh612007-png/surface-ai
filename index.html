@@ -1,0 +1,2936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SurfaceAI — Intelligent Surface Defect & Quality Platform</title>
+<meta name="description" content="Industrial surface defect detection, CNN classification and explainable Grad-CAM quality analytics for manufacturing." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ─── Flamingo Design Tokens ──────────────────────────────────── */
+:root {
+  --bg-page:        #F7F4EE;
+  --bg-card:        #FFFFFF;
+  --bg-beige:       #EFEAE0;
+  --bg-beige-light: #F4EFE6;
+  --bg-dark:        #131417;
+  --bg-dark-card:   #1A1C20;
+  --border-light:   #E5DFD3;
+  --border-dark:    #2A2B2F;
+  --amber:          #F5A623;
+  --amber-hover:    #E29315;
+  --amber-soft:     #FEF5E7;
+  --amber-border:   #FAD99F;
+  --text-dark:      #121316;
+  --text-muted:     #6D6B65;
+  --text-light:     #F7F4EE;
+  --text-subdark:   #9C9A93;
+  --font:           'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono:           'JetBrains Mono', monospace;
+  --radius-lg:      24px;
+  --radius-md:      16px;
+  --radius-sm:      10px;
+  --radius-pill:    9999px;
+  --shadow-sm:      0 2px 8px rgba(0,0,0,0.04);
+  --shadow-md:      0 8px 24px rgba(0,0,0,0.06);
+  --shadow-dark:    0 16px 40px rgba(0,0,0,0.18);
+  --transition:     0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg-page);
+  color: var(--text-dark);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: var(--font); border: none; outline: none; background: none; }
+input, select { font-family: var(--font); }
+img { max-width: 100%; display: block; }
+::selection { background: var(--amber); color: #121316; }
+
+/* ─── Container ──────────────────────────────────────────────── */
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ─── Pill & Badge Utilities ─────────────────────────────────── */
+.pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  border: 1px solid var(--text-dark);
+  color: var(--text-dark);
+}
+.pill-tag.amber {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #121316;
+}
+.pill-tag.dark {
+  background: var(--bg-dark);
+  border-color: var(--bg-dark);
+  color: #FFF;
+}
+.pill-tag.soft {
+  background: var(--bg-beige);
+  border-color: var(--border-light);
+  color: var(--text-muted);
+}
+
+/* ─── Buttons ────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.btn-amber {
+  background: var(--amber);
+  color: #121316;
+  border: 1px solid var(--amber);
+}
+.btn-amber:hover {
+  background: var(--amber-hover);
+  border-color: var(--amber-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.35);
+}
+.btn-dark {
+  background: var(--bg-dark);
+  color: #FFFFFF;
+  border: 1px solid var(--bg-dark);
+}
+.btn-dark:hover {
+  background: #23252A;
+  transform: translateY(-1px);
+}
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--text-dark);
+  color: var(--text-dark);
+}
+.btn-outline:hover {
+  background: var(--text-dark);
+  color: #FFF;
+}
+.btn-outline-amber {
+  background: transparent;
+  border: 1.5px solid var(--amber);
+  color: var(--text-dark);
+}
+.btn-outline-amber:hover {
+  background: var(--amber);
+  color: #121316;
+}
+.btn-ghost {
+  color: var(--text-muted);
+  padding: 8px 14px;
+}
+.btn-ghost:hover {
+  color: var(--text-dark);
+  background: var(--bg-beige);
+}
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ─── Top Navigation Bar ─────────────────────────────────────── */
+.top-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(247, 244, 238, 0.94);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-light);
+  padding: 14px 0;
+}
+.nav-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.brand-logo-icon {
+  width: 38px;
+  height: 38px;
+  background: var(--bg-dark);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--amber);
+}
+.brand-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text-dark);
+}
+.brand-tag {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--amber);
+  color: #121316;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Nav Menu Pills */
+.nav-menu {
+  display: flex;
+  align-items: center;
+  background: var(--bg-beige);
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  gap: 2px;
+}
+.nav-item {
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all var(--transition);
+}
+.nav-item:hover {
+  color: var(--text-dark);
+}
+.nav-item.active {
+  background: var(--bg-card);
+  color: var(--text-dark);
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+}
+
+/* Nav Actions */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.green { background: #10B981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+.status-dot.amber { background: var(--amber); box-shadow: 0 0 8px rgba(245, 166, 35, 0.4); }
+.status-dot.red { background: #EF4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+
+.mobile-menu-btn {
+  display: none;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text-dark);
+}
+
+/* ─── Main Content Canvas ────────────────────────────────────── */
+.main-canvas {
+  padding: 32px 0 64px;
+}
+.section { display: none; }
+.section.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ─── Editorial Hero Banner (Template Style) ─────────────────── */
+.hero-editorial {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 32px;
+  margin-bottom: 32px;
+  align-items: stretch;
+}
+.hero-card-left {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 44px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.hero-card-left::after {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-headline {
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -1.2px;
+  color: var(--text-dark);
+  margin: 18px 0 16px;
+}
+.hero-sub {
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 520px;
+  margin-bottom: 28px;
+}
+.hero-cta-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Hero Right Pill / Dual-Stat Showcase (Flamingo Dual Capsule) */
+.hero-card-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.dual-capsule-card {
+  background: var(--bg-beige);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+}
+.dual-capsule-badge {
+  background: #FFFFFF;
+  border-radius: var(--radius-pill);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: var(--shadow-sm);
+  margin-top: 16px;
+}
+.dual-col {
+  text-align: center;
+  flex: 1;
+}
+.dual-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--border-light);
+}
+.dual-num {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1;
+  font-family: var(--mono);
+}
+.dual-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+/* ─── How It Works (Flamingo 01-05 Stacked Process) ──────────── */
+.process-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 36px 40px;
+  margin-bottom: 32px;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 40px;
+  box-shadow: var(--shadow-sm);
+}
+.process-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.process-title {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.8px;
+  text-transform: uppercase;
+  margin: 16px 0 14px;
+}
+.process-sub {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.step-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.step-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  transition: all var(--transition);
+}
+.step-card:hover {
+  background: #FFFFFF;
+  border-color: var(--amber);
+  box-shadow: 0 4px 14px rgba(245, 166, 35, 0.15);
+  transform: translateX(4px);
+}
+.step-num {
+  font-size: 18px;
+  font-weight: 800;
+  font-family: var(--mono);
+  color: var(--text-dark);
+  padding: 6px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: #FFFFFF;
+}
+.step-body {
+  flex: 1;
+}
+.step-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.step-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.step-icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ─── KPI Cards (Ivory cards with Bottom Amber Icon Box) ─────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 20px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 140px;
+  position: relative;
+  transition: all var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+.kpi-card:hover {
+  border-color: var(--amber);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.kpi-top {
+  display: flex;
+  flex-direction: column;
+}
+.kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.kpi-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1.1;
+  font-family: var(--mono);
+}
+.kpi-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.kpi-bottom {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.amber-icon-box {
+  width: 34px;
+  height: 34px;
+  background: var(--amber);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #121316;
+  flex-shrink: 0;
+}
+
+/* ─── Charts Row ─────────────────────────────────────────────── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.chart-card.full {
+  grid-column: 1 / -1;
+}
+.chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.chart-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.chart-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.chart-wrap {
+  position: relative;
+  height: 230px;
+}
+.chart-wrap.tall {
+  height: 290px;
+}
+.chart-empty {
+  height: 230px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ─── Inverted Obsidian Dark Section (Flamingo Signature) ─────── */
+.dark-showcase-section {
+  background: var(--bg-dark);
+  color: var(--text-light);
+  border-radius: var(--radius-lg);
+  padding: 44px 40px;
+  margin-bottom: 32px;
+  box-shadow: var(--shadow-dark);
+}
+.dark-showcase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.dark-showcase-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #FFFFFF;
+}
+.dark-showcase-sub {
+  font-size: 14px;
+  color: var(--text-subdark);
+  margin-top: 4px;
+}
+.dark-cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.dark-feature-card {
+  background: #FFFFFF;
+  color: var(--text-dark);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 190px;
+}
+.dark-feature-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.dark-feature-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.dark-feature-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+
+/* ─── Table Cards ────────────────────────────────────────────── */
+.table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-light);
+}
+.table-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.table-wrap {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 12px 20px;
+  text-align: left;
+  background: var(--bg-beige-light);
+  border-bottom: 1px solid var(--border-light);
+  white-space: nowrap;
+}
+td {
+  padding: 13px 20px;
+  font-size: 13px;
+  color: var(--text-dark);
+  border-bottom: 1px solid var(--border-light);
+  white-space: nowrap;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg-beige-light); }
+.table-empty {
+  padding: 48px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ─── Defect Badges (Class Chips) ────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.badge-crazing { background: rgba(245, 166, 35, 0.16); color: #B36B00; border: 1px solid rgba(245, 166, 35, 0.35); }
+.badge-inclusion { background: rgba(99, 102, 241, 0.12); color: #4338CA; border: 1px solid rgba(99, 102, 241, 0.25); }
+.badge-patches { background: rgba(236, 72, 153, 0.12); color: #BE185D; border: 1px solid rgba(236, 72, 153, 0.25); }
+.badge-pitted { background: rgba(249, 115, 22, 0.12); color: #C2410C; border: 1px solid rgba(249, 115, 22, 0.25); }
+.badge-scale { background: rgba(16, 185, 129, 0.12); color: #047857; border: 1px solid rgba(16, 185, 129, 0.25); }
+.badge-scratches { background: rgba(234, 179, 8, 0.14); color: #A16207; border: 1px solid rgba(234, 179, 8, 0.3); }
+.badge-gray { background: var(--bg-beige); color: var(--text-muted); border: 1px solid var(--border-light); }
+.badge-red { background: rgba(239, 68, 68, 0.12); color: #DC2626; border: 1px solid rgba(239, 68, 68, 0.25); }
+
+/* ─── Inspection Studio Layout ───────────────────────────────── */
+.inspection-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+.upload-zone {
+  border: 2px dashed var(--border-light);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  text-align: center;
+  padding: 56px 32px;
+  transition: all var(--transition);
+  cursor: pointer;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+}
+.upload-icon {
+  margin: 0 auto 16px;
+  width: 58px;
+  height: 58px;
+  background: var(--amber);
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #121316;
+  box-shadow: 0 4px 14px rgba(245, 166, 35, 0.35);
+}
+.upload-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+.upload-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+.upload-formats {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+#file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Preview Frame */
+.preview-area {
+  display: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-beige-light);
+}
+.preview-filename {
+  font-weight: 700;
+  font-size: 14px;
+}
+.preview-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.preview-img-wrap {
+  position: relative;
+  background: #0E0F12;
+  max-height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.preview-img-wrap img {
+  max-height: 380px;
+  object-fit: contain;
+  width: 100%;
+}
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 19, 22, 0.65);
+  backdrop-filter: blur(2px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+  box-shadow: 0 0 12px var(--amber);
+  animation: scanLine 1.6s ease-in-out infinite;
+  top: 0;
+}
+@keyframes scanLine { 0% { top: 0%; opacity: 1; } 100% { top: 100%; opacity: 0.3; } }
+.scan-status { color: #FFF; font-size: 14px; font-weight: 700; }
+.scan-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Result Panel (Flamingo Aesthetic) */
+.result-panel {
+  display: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.result-header {
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-beige-light);
+}
+.result-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.result-icon-amber {
+  width: 48px;
+  height: 48px;
+  background: var(--amber);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #121316;
+}
+.result-class {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text-dark);
+}
+.result-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.result-body {
+  padding: 24px;
+}
+.result-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.result-info-block {
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+.result-info-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.result-info-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.confidence-track {
+  background: var(--border-light);
+  border-radius: var(--radius-pill);
+  height: 8px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.confidence-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--amber);
+  transition: width 0.6s ease;
+}
+
+/* Top 3 list */
+.top3-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.top3-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.top3-cls {
+  flex: 1.2;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.top3-bar {
+  flex: 2;
+  height: 6px;
+  background: var(--border-light);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.top3-fill {
+  height: 100%;
+  background: var(--amber);
+  border-radius: var(--radius-pill);
+  transition: width 0.5s ease;
+}
+.top3-pct {
+  font-weight: 700;
+  font-family: var(--mono);
+  font-size: 11px;
+  width: 44px;
+  text-align: right;
+}
+
+/* Grad-CAM Heatmap container */
+.gradcam-section {
+  background: var(--bg-dark);
+  color: #FFF;
+  border-radius: var(--radius-md);
+  padding: 18px;
+  margin-top: 20px;
+}
+.gradcam-note {
+  font-size: 11px;
+  color: var(--amber);
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.result-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-light);
+  flex-wrap: wrap;
+}
+
+/* ─── Filters & Search Bar ───────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-beige-light);
+  align-items: center;
+}
+.filter-bar input, .filter-bar select {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-pill);
+  color: var(--text-dark);
+  padding: 8px 16px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.filter-bar input:focus, .filter-bar select:focus {
+  border-color: var(--amber);
+}
+
+/* ─── Pagination ─────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-light);
+}
+.page-info {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.page-btns {
+  display: flex;
+  gap: 6px;
+}
+.page-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-dark);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.page-btn:hover {
+  border-color: var(--amber);
+  color: var(--amber-hover);
+}
+.page-btn.active {
+  background: var(--amber);
+  color: #121316;
+  border-color: var(--amber);
+  font-weight: 800;
+}
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Analytics Toolbar & Tabs ───────────────────────────────── */
+.analytics-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+.period-btn {
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.period-btn:hover {
+  border-color: var(--amber);
+  color: var(--text-dark);
+}
+.period-btn.active {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #121316;
+}
+.date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.date-inputs input {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-dark);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: 12px;
+  outline: none;
+}
+.date-inputs input:focus { border-color: var(--amber); }
+
+.analytics-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-beige);
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  margin-bottom: 24px;
+  width: max-content;
+}
+.analytics-tab {
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.analytics-tab.active {
+  background: var(--bg-card);
+  color: var(--text-dark);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ─── Reports Grid ───────────────────────────────────────────── */
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.report-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 240px;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition);
+}
+.report-card:hover {
+  border-color: var(--amber);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.report-card h4 {
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: var(--text-dark);
+}
+.report-card p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* ─── Model Info Cards ───────────────────────────────────────── */
+.info-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.info-section h3 {
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 18px;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-key { color: var(--text-muted); font-weight: 500; }
+.info-val { color: var(--text-dark); font-weight: 700; font-family: var(--mono); }
+.classes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+.class-chip {
+  background: var(--bg-beige-light);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Toast Notifications ────────────────────────────────────── */
+#notifications {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 380px;
+}
+.notif {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+.notif.success { border-left: 4px solid #10B981; }
+.notif.error { border-left: 4px solid #EF4444; }
+.notif.info { border-left: 4px solid var(--amber); }
+.notif-msg { flex: 1; color: var(--text-dark); }
+.notif-close { color: var(--text-muted); cursor: pointer; font-size: 16px; background: none; border: none; }
+
+/* ─── Footer ─────────────────────────────────────────────────── */
+.app-footer {
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-card);
+  padding: 36px 0;
+  margin-top: 48px;
+}
+.footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.footer-text {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.footer-links a:hover { color: var(--text-dark); }
+
+/* ─── Responsive Media Queries ───────────────────────────────── */
+@media (max-width: 1100px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .reports-grid { grid-template-columns: repeat(2, 1fr); }
+  .dark-cards-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .hero-editorial { grid-template-columns: 1fr; }
+  .process-section { grid-template-columns: 1fr; }
+  .inspection-grid { grid-template-columns: 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .charts-grid .chart-card.full { grid-column: unset; }
+  .nav-menu { display: none; }
+  .mobile-menu-btn { display: block; }
+}
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .reports-grid { grid-template-columns: 1fr; }
+  .result-info-grid { grid-template-columns: 1fr; }
+  .classes-grid { grid-template-columns: 1fr; }
+  .hero-headline { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+
+<div id="notifications"></div>
+
+<!-- ═══ TOP NAVBAR (Flamingo Style) ═══ -->
+<header class="top-header">
+  <div class="container nav-wrapper">
+    <div class="brand-group" onclick="navigate('overview')">
+      <div class="brand-logo-icon">
+        <!-- Lens / Defect Reticle SVG -->
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="8" />
+          <line x1="12" y1="2" x2="12" y2="6" />
+          <line x1="12" y1="18" x2="12" y2="22" />
+          <line x1="2" y1="12" x2="6" y2="12" />
+          <line x1="18" y1="12" x2="22" y2="12" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" />
+        </svg>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="brand-title">SurfaceAI</span>
+          <span class="brand-tag">v2.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Nav Pills -->
+    <nav class="nav-menu">
+      <button class="nav-item active" onclick="navigate('overview')" id="nav-overview">Overview</button>
+      <button class="nav-item" onclick="navigate('inspect')" id="nav-inspect">New Inspection</button>
+      <button class="nav-item" onclick="navigate('history')" id="nav-history">History</button>
+      <button class="nav-item" onclick="navigate('analytics')" id="nav-analytics">Analytics</button>
+      <button class="nav-item" onclick="navigate('reports')" id="nav-reports">Reports</button>
+      <button class="nav-item" onclick="navigate('model-info')" id="nav-model-info">Model Info</button>
+    </nav>
+
+    <!-- Right Actions -->
+    <div class="nav-actions">
+      <div class="status-pill" id="sidebar-model-status" title="Deep learning backend inference state">
+        <div class="status-dot amber"></div>
+        <span style="font-size:12px">Checking…</span>
+      </div>
+      <button class="btn btn-amber" onclick="navigate('inspect')">
+        <span>New Inspection</span>
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+      </button>
+      <button class="mobile-menu-btn" onclick="toggleMobileNav()" aria-label="Toggle menu">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Navigation Drawer -->
+<div id="mobile-drawer" style="display:none;background:var(--bg-beige);border-bottom:1px solid var(--border-light);padding:14px 24px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <button class="nav-item" onclick="navigate('overview');toggleMobileNav()">Overview</button>
+    <button class="nav-item" onclick="navigate('inspect');toggleMobileNav()">New Inspection</button>
+    <button class="nav-item" onclick="navigate('history');toggleMobileNav()">History</button>
+    <button class="nav-item" onclick="navigate('analytics');toggleMobileNav()">Analytics</button>
+    <button class="nav-item" onclick="navigate('reports');toggleMobileNav()">Reports</button>
+    <button class="nav-item" onclick="navigate('model-info');toggleMobileNav()">Model Info</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP CANVAS ═══ -->
+<main class="main-canvas">
+  <div class="container">
+
+    <!-- ════════════════════════════════════════════════
+         SECTION 1: OVERVIEW (Flamingo Editorial Showcase)
+    ════════════════════════════════════════════════════ -->
+    <div class="section active" id="section-overview">
+      
+      <!-- Editorial Hero Banner -->
+      <div class="hero-editorial">
+        <div class="hero-card-left">
+          <div>
+            <div class="pill-tag">Automated Quality Assurance</div>
+            <h1 class="hero-headline">Industrial Surface Defect & Quality Tracker</h1>
+            <p class="hero-sub">Deep learning quality inspection engine with real-time CNN classification, spatial Grad-CAM localization, and audit analytics for manufacturing steel and metal sheets.</p>
+          </div>
+          <div class="hero-cta-group">
+            <button class="btn btn-amber" onclick="navigate('inspect')">
+              <span>Scan Surface Image</span>
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+            </button>
+            <button class="btn btn-outline" onclick="navigate('history')">
+              <span>Browse History</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Side Dual Capsule Showcase (Flamingo Inspired) -->
+        <div class="hero-card-right">
+          <div class="dual-capsule-card">
+            <div>
+              <div class="pill-tag soft">Precision Telemetry</div>
+              <div style="font-size:18px;font-weight:800;margin-top:10px;color:var(--text-dark)">Real-Time Quality Metrics</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Evaluated against the NEU metal defect standard benchmark.</div>
+            </div>
+            
+            <!-- Dual Stat Capsule -->
+            <div class="dual-capsule-badge">
+              <div class="dual-col">
+                <div class="dual-num" id="topbar-total">—</div>
+                <div class="dual-lbl">Inspections</div>
+              </div>
+              <div class="dual-divider"></div>
+              <div class="dual-col">
+                <div class="dual-num">6</div>
+                <div class="dual-lbl">Defect Classes</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- How SurfaceAI Works (Flamingo 01 to 05 Stacked Cards) -->
+      <div class="process-section">
+        <div class="process-header">
+          <div>
+            <div class="pill-tag amber">Operational Workflow</div>
+            <h2 class="process-title">How SurfaceAI Works</h2>
+            <p class="process-sub">From raw optical capture on the factory line to explainable neural diagnostics and compliance record keeping in seconds.</p>
+          </div>
+          <div>
+            <button class="btn btn-amber" onclick="navigate('inspect')">
+              <span>Run Inspection</span>
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="step-stack">
+          <div class="step-card">
+            <div class="step-num">01</div>
+            <div class="step-body">
+              <div class="step-name">Surface Optical Ingestion</div>
+              <div class="step-desc">Upload or drag & drop raw steel surface imagery (JPG, PNG up to 16MB).</div>
+            </div>
+            <div class="step-icon-btn">?</div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">02</div>
+            <div class="step-body">
+              <div class="step-name">ResNet Neural Feature Extraction</div>
+              <div class="step-desc">Deep transfer learning backbone pre-trained on ImageNet & fine-tuned on NEU-CLS.</div>
+            </div>
+            <div class="step-icon-btn">?</div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">03</div>
+            <div class="step-body">
+              <div class="step-name">Probabilistic Classification</div>
+              <div class="step-desc">Computes softmax probabilities across 6 distinct defect categories.</div>
+            </div>
+            <div class="step-icon-btn">?</div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">04</div>
+            <div class="step-body">
+              <div class="step-name">Explainable Grad-CAM Heatmap</div>
+              <div class="step-desc">Highlights critical gradient activations directly over the defect region.</div>
+            </div>
+            <div class="step-icon-btn">?</div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-num">05</div>
+            <div class="step-body">
+              <div class="step-name">Persistent Audit & PDF Reporting</div>
+              <div class="step-desc">Stores complete inspection telemetry in SQLite for instant ISO compliance reports.</div>
+            </div>
+            <div class="step-icon-btn">?</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Metrics Grid (With Amber Icon Boxes) -->
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div class="kpi-label">Total Inspections</div>
+            <div class="kpi-value" id="kpi-total">—</div>
+            <div class="kpi-sub">Total database logs</div>
+          </div>
+          <div class="kpi-bottom">
+            <div class="amber-icon-box">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div class="kpi-label">Most Common Defect</div>
+            <div class="kpi-value" id="kpi-most-common" style="font-size:20px;word-break:break-word">—</div>
+            <div class="kpi-sub">Frequency leader</div>
+          </div>
+          <div class="kpi-bottom">
+            <div class="amber-icon-box">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div class="kpi-label">Avg. Confidence</div>
+            <div class="kpi-value" id="kpi-avg-conf">—</div>
+            <div class="kpi-sub">Recent inference runs</div>
+          </div>
+          <div class="kpi-bottom">
+            <div class="amber-icon-box">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div class="kpi-label">Inspections Today</div>
+            <div class="kpi-value" id="kpi-today">—</div>
+            <div class="kpi-sub">UTC calendar day</div>
+          </div>
+          <div class="kpi-bottom">
+            <div class="amber-icon-box">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div class="kpi-label">Latest Defect</div>
+            <div class="kpi-value" id="kpi-latest-class" style="font-size:20px">—</div>
+            <div class="kpi-sub" id="kpi-latest-time">—</div>
+          </div>
+          <div class="kpi-bottom">
+            <div class="amber-icon-box">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div class="kpi-label">Defect Classes</div>
+            <div class="kpi-value" id="kpi-note">6</div>
+            <div class="kpi-sub">NEU-CLS Benchmark</div>
+          </div>
+          <div class="kpi-bottom">
+            <div class="amber-icon-box">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Defect Category Distribution</div>
+              <div class="chart-note">Predicted classifications across historical runs</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="ov-category-chart"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Confidence Distribution</div>
+              <div class="chart-note">Distribution of Softmax model probabilities</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="ov-confidence-chart"></canvas></div>
+        </div>
+
+        <div class="chart-card full">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Daily Inspection Activity</div>
+              <div class="chart-note">30-day inspection throughput categorized by defect type</div>
+            </div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="ov-daily-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Dark Contrast Showcase Section (Flamingo Signature Section) -->
+      <div class="dark-showcase-section">
+        <div class="dark-showcase-header">
+          <div>
+            <div class="pill-tag amber" style="margin-bottom:12px">Air-Gapped Security</div>
+            <h2 class="dark-showcase-title">Enterprise Defect Inspection Integrity</h2>
+            <p class="dark-showcase-sub">Built for critical production environments with strict privacy, high accuracy, and full regulatory traceability.</p>
+          </div>
+          <button class="btn btn-amber" onclick="navigate('inspect')">
+            <span>Launch Scanner</span>
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+          </button>
+        </div>
+
+        <div class="dark-cards-row">
+          <div class="dark-feature-card">
+            <div>
+              <div class="dark-feature-title">Complete Privacy</div>
+              <p class="dark-feature-text">Zero cloud reliance. All deep neural inference occurs locally inside your air-gapped facility. Metal surface designs remain 100% private.</p>
+            </div>
+            <div class="dark-feature-bottom">
+              <span class="pill-tag soft">Zero Cloud Leak</span>
+              <div class="amber-icon-box">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="dark-feature-card">
+            <div>
+              <div class="dark-feature-title">Grad-CAM Explainability</div>
+              <p class="dark-feature-text">No black-box decisions. Visual heatmaps pinpoint exactly which pixel regions triggered the defect classification to assist human operators.</p>
+            </div>
+            <div class="dark-feature-bottom">
+              <span class="pill-tag soft">XAI Visualizer</span>
+              <div class="amber-icon-box">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="dark-feature-card">
+            <div>
+              <div class="dark-feature-title">Audit Reports & Export</div>
+              <p class="dark-feature-text">Export formatted CSV summaries and printable PDF inspection certificates in seconds for ISO/TS audit trails and operator handoffs.</p>
+            </div>
+            <div class="dark-feature-bottom">
+              <span class="pill-tag soft">ISO Compliant</span>
+              <div class="amber-icon-box">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Inspections Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <div class="table-title">Recent Inspection Records</div>
+            <div style="font-size:12px;color:var(--text-muted)">Latest metal surface evaluations from the live database</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="navigate('history')">
+            <span>View All Records</span>
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Filename</th>
+                <th>Predicted Defect Class</th>
+                <th>Confidence Score</th>
+                <th>Model Version</th>
+                <th>Timestamp (UTC)</th>
+              </tr>
+            </thead>
+            <tbody id="recent-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════
+         SECTION 2: NEW INSPECTION STUDIO
+    ════════════════════════════════════════════════════ -->
+    <div class="section" id="section-inspect">
+      <div style="margin-bottom:24px">
+        <div class="pill-tag amber">Neural Scanner</div>
+        <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin:10px 0 4px">Surface Defect Inspection Studio</h2>
+        <p style="font-size:14px;color:var(--text-muted)">Upload high-resolution metal surface photographs to run real-time defect classification & Grad-CAM spatial analysis.</p>
+      </div>
+
+      <div class="inspection-grid">
+        <!-- Upload Column -->
+        <div>
+          <div class="upload-zone" id="upload-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+            <input type="file" id="file-input" accept=".jpg,.jpeg,.png" onchange="handleFileSelect(event)" />
+            <div class="upload-icon">
+              <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div class="upload-title">Drop metal surface image here</div>
+            <div class="upload-sub">Or click to select a sample from your local file manager</div>
+            <div class="upload-formats">Supported Formats: JPG, JPEG, PNG · Maximum size: 16 MB</div>
+          </div>
+
+          <!-- Preview Frame -->
+          <div class="preview-area" id="preview-area">
+            <div class="preview-toolbar">
+              <div>
+                <div class="preview-filename" id="preview-name">sample.jpg</div>
+                <div class="preview-meta" id="preview-meta">0 KB</div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-outline btn-sm" onclick="resetUpload()">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.6"/></svg>
+                  Replace
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="resetUpload()">Remove</button>
+              </div>
+            </div>
+
+            <div class="preview-img-wrap" id="preview-img-wrap">
+              <img id="preview-img" src="" alt="Selected Surface Preview" />
+              <div class="scan-overlay" id="scan-overlay">
+                <div class="scan-line"></div>
+                <div class="scan-spinner"></div>
+                <div class="scan-status">Analyzing microstructure anomalies…</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:18px;display:flex;gap:12px;align-items:center">
+            <button class="btn btn-amber" id="scan-btn" onclick="runScan()" disabled>
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Run Defect Scan
+            </button>
+            <span id="scan-status-msg" style="font-size:12px;color:var(--text-muted);font-weight:600"></span>
+          </div>
+        </div>
+
+        <!-- Result Column -->
+        <div>
+          <!-- Empty State -->
+          <div id="result-empty" style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:64px 32px;text-align:center;box-shadow:var(--shadow-sm)">
+            <div style="width:64px;height:64px;background:var(--bg-beige);border-radius:var(--radius-pill);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">
+              <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg>
+            </div>
+            <div style="font-size:17px;font-weight:800;color:var(--text-dark);margin-bottom:6px">Ready for Inference</div>
+            <p style="font-size:13px;color:var(--text-muted);max-width:320px;margin:0 auto">Select an image on the left and click "Run Defect Scan" to process deep learning inference.</p>
+          </div>
+
+          <!-- Result Panel -->
+          <div class="result-panel" id="result-panel">
+            <div class="result-header">
+              <div class="result-header-left">
+                <div class="result-icon-amber" id="result-icon">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div>
+                  <div class="result-class" id="result-class">—</div>
+                  <div class="result-meta" id="result-meta">Inspection complete</div>
+                </div>
+              </div>
+              <span class="badge" id="result-badge"></span>
+            </div>
+
+            <div class="result-body">
+              <div class="result-info-grid">
+                <div class="result-info-block">
+                  <div class="result-info-label">Predicted Class</div>
+                  <div class="result-info-value" id="ri-class">—</div>
+                  <div style="margin-top:12px">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted)">
+                      <span>Confidence</span>
+                      <span id="ri-conf-pct" style="font-weight:700;font-family:var(--mono);color:var(--text-dark)">—</span>
+                    </div>
+                    <div class="confidence-track"><div class="confidence-fill" id="ri-conf-bar" style="width:0%"></div></div>
+                  </div>
+                </div>
+
+                <div class="result-info-block">
+                  <div class="result-info-label">Top 3 Defect Probabilities</div>
+                  <div class="top3-list" id="top3-list"></div>
+                </div>
+
+                <div class="result-info-block">
+                  <div class="result-info-label">Inspection Record ID</div>
+                  <div class="result-info-value" id="ri-id">—</div>
+                  <div style="margin-top:10px">
+                    <div class="result-info-label">Timestamp (UTC)</div>
+                    <div class="result-info-value" id="ri-date" style="font-size:13px">—</div>
+                  </div>
+                </div>
+
+                <div class="result-info-block">
+                  <div class="result-info-label">Source Filename</div>
+                  <div class="result-info-value" id="ri-filename" style="font-size:13px;word-break:break-all">—</div>
+                  <div style="margin-top:10px">
+                    <div class="result-info-label">Model Engine</div>
+                    <div class="result-info-value" id="ri-model" style="font-size:13px">—</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Grad-CAM Heatmap -->
+              <div class="gradcam-section" id="gradcam-section" style="display:none">
+                <div class="gradcam-note">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span>Grad-CAM Spatial Explanation Heatmap (Defect Activation Gradient)</span>
+                </div>
+                <img id="gradcam-img" src="" alt="Grad-CAM Activation" style="width:100%;border-radius:10px;border:1px solid #2A2B2F" />
+              </div>
+
+              <div class="result-actions">
+                <button class="btn btn-amber btn-sm" onclick="resetUpload()">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Inspect Another Sample
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="downloadResultJson()">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download JSON Result
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="navigate('history')">View In History →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════
+         SECTION 3: INSPECTION HISTORY
+    ════════════════════════════════════════════════════ -->
+    <div class="section" id="section-history">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px">
+        <div>
+          <div class="pill-tag soft">Audit Repository</div>
+          <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin:8px 0 4px">Historical Inspection Logs</h2>
+          <p style="font-size:14px;color:var(--text-muted)">Search, inspect, filter, and export all logged surface evaluation runs.</p>
+        </div>
+        <button class="btn btn-amber" onclick="exportCsv()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Full CSV
+        </button>
+      </div>
+
+      <div class="table-card">
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <input type="text" id="hist-search" placeholder="🔍 Search filename or ID…" style="min-width:220px" oninput="debounceHistory()" />
+          <select id="hist-category" onchange="loadHistory(1)">
+            <option value="">All Categories</option>
+            <option value="Crazing">Crazing</option>
+            <option value="Inclusion">Inclusion</option>
+            <option value="Patches">Patches</option>
+            <option value="Pitted Surface">Pitted Surface</option>
+            <option value="Rolled-in Scale">Rolled-in Scale</option>
+            <option value="Scratches">Scratches</option>
+          </select>
+          <input type="date" id="hist-from" onchange="loadHistory(1)" title="From date" />
+          <input type="date" id="hist-to" onchange="loadHistory(1)" title="To date" />
+          <select id="hist-sort" onchange="loadHistory(1)">
+            <option value="timestamp_utc|desc">Newest first</option>
+            <option value="timestamp_utc|asc">Oldest first</option>
+            <option value="confidence|desc">Highest confidence</option>
+            <option value="confidence|asc">Lowest confidence</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="clearHistoryFilters()">Reset Filters</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Filename</th>
+                <th>Predicted Defect Class</th>
+                <th>Confidence Score</th>
+                <th>Model Version</th>
+                <th>Timestamp (UTC)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="hist-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination" id="hist-pagination">
+          <div class="page-info" id="hist-page-info">—</div>
+          <div class="page-btns" id="hist-page-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════
+         SECTION 4: ANALYTICS
+    ════════════════════════════════════════════════════ -->
+    <div class="section" id="section-analytics">
+      <div style="margin-bottom:24px">
+        <div class="pill-tag soft">Statistical Intelligence</div>
+        <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin:8px 0 4px">Defect Analytics & Inspection Trends</h2>
+        <p style="font-size:14px;color:var(--text-muted)">Interactive breakdown of defect occurrence rates, temporal distributions, and confidence intervals.</p>
+      </div>
+
+      <!-- Periods -->
+      <div class="analytics-toolbar" id="analytics-toolbar">
+        <button class="period-btn active" onclick="setPeriod('today')">Today</button>
+        <button class="period-btn" onclick="setPeriod('yesterday')">Yesterday</button>
+        <button class="period-btn" onclick="setPeriod('7d')">Last 7 Days</button>
+        <button class="period-btn" onclick="setPeriod('30d')">Last 30 Days</button>
+        <button class="period-btn" onclick="setPeriod('month')">This Month</button>
+        <button class="period-btn" onclick="setPeriod('year')">This Year</button>
+        <button class="period-btn" onclick="setPeriod('all')">All Time</button>
+        <div class="date-inputs">
+          <input type="date" id="an-from" onchange="applyCustomPeriod()" title="From" />
+          <span style="color:var(--text-muted);font-size:12px">→</span>
+          <input type="date" id="an-to" onchange="applyCustomPeriod()" title="To" />
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="analytics-tabs">
+        <button class="analytics-tab active" onclick="switchAnalyticsTab('daily')">Daily Trend</button>
+        <button class="analytics-tab" onclick="switchAnalyticsTab('monthly')">Monthly</button>
+        <button class="analytics-tab" onclick="switchAnalyticsTab('yearly')">Yearly</button>
+        <button class="analytics-tab" onclick="switchAnalyticsTab('categories')">Defect Categories</button>
+        <button class="analytics-tab" onclick="switchAnalyticsTab('confidence')">Confidence Spread</button>
+      </div>
+
+      <!-- Daily -->
+      <div id="an-daily">
+        <div class="charts-grid">
+          <div class="chart-card full">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Daily Inspection Volume by Defect Category</div>
+                <div class="chart-note">Stacked distribution of inspected surface plates</div>
+              </div>
+            </div>
+            <div class="chart-wrap tall"><canvas id="an-daily-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly -->
+      <div id="an-monthly" style="display:none">
+        <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center">
+          <label style="font-size:13px;font-weight:700">Filter Year:</label>
+          <select id="an-year-select" onchange="loadMonthly()" style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-pill);padding:6px 14px;font-size:13px;outline:none"></select>
+        </div>
+        <div class="charts-grid">
+          <div class="chart-card full">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Monthly Defect Occurrence Trend</div>
+                <div class="chart-note">Month-over-month inspection counts</div>
+              </div>
+            </div>
+            <div class="chart-wrap tall"><canvas id="an-monthly-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Yearly -->
+      <div id="an-yearly" style="display:none">
+        <div class="charts-grid">
+          <div class="chart-card full">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Year-over-Year Defect Trends</div>
+                <div class="chart-note">Longitudinal defect counts across operating years</div>
+              </div>
+            </div>
+            <div class="chart-wrap tall"><canvas id="an-yearly-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div id="an-categories" style="display:none">
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Defect Distribution Breakdown</div>
+                <div class="chart-note">Relative proportion of detected defect classes</div>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="an-cat-chart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Category Table Summary</div>
+                <div class="chart-note">Quantified tallies and percentages for selected filter</div>
+              </div>
+            </div>
+            <div id="an-cat-table" style="padding-top:8px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confidence -->
+      <div id="an-confidence" style="display:none">
+        <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center">
+          <label style="font-size:13px;font-weight:700">Filter Defect Class:</label>
+          <select id="an-conf-class" onchange="loadConfidenceAnalytics()" style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-pill);padding:6px 14px;font-size:13px;outline:none">
+            <option value="">All Defect Classes</option>
+            <option value="Crazing">Crazing</option>
+            <option value="Inclusion">Inclusion</option>
+            <option value="Patches">Patches</option>
+            <option value="Pitted Surface">Pitted Surface</option>
+            <option value="Rolled-in Scale">Rolled-in Scale</option>
+            <option value="Scratches">Scratches</option>
+          </select>
+        </div>
+        <div class="charts-grid">
+          <div class="chart-card full">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Confidence Distribution Histogram</div>
+                <div class="chart-note">Softmax probability buckets (0.0 to 1.0)</div>
+              </div>
+            </div>
+            <div class="chart-wrap tall"><canvas id="an-conf-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════
+         SECTION 5: REPORTS & EXPORTS (Flamingo Feature Cards)
+    ════════════════════════════════════════════════════ -->
+    <div class="section" id="section-reports">
+      <div style="margin-bottom:24px">
+        <div class="pill-tag soft">Audit Documentation</div>
+        <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin:8px 0 4px">Compliance Reports & Data Exports</h2>
+        <p style="font-size:14px;color:var(--text-muted)">Generate verified quality inspection certificates and export raw tabular telemetry for audit compliance.</p>
+      </div>
+
+      <div class="reports-grid">
+        <div class="report-card">
+          <div>
+            <div class="amber-icon-box" style="margin-bottom:18px">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <h4>Full Inspection Archive</h4>
+            <p>Export all historical inspection rows into a single standardized CSV dataset containing IDs, filenames, confidence, and timestamps.</p>
+          </div>
+          <button class="btn btn-amber btn-sm" onclick="exportCsv()">Export All CSV</button>
+        </div>
+
+        <div class="report-card">
+          <div>
+            <div class="amber-icon-box" style="margin-bottom:18px">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <h4>Filtered CSV Batch</h4>
+            <p>Export a targeted inspection subset matching specific defect categories and custom calendar date ranges.</p>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+              <select id="rep-category" style="background:var(--bg-beige);border:1px solid var(--border-light);border-radius:var(--radius-pill);padding:6px 12px;font-size:12px;outline:none">
+                <option value="">All Categories</option>
+                <option value="Crazing">Crazing</option>
+                <option value="Inclusion">Inclusion</option>
+                <option value="Patches">Patches</option>
+                <option value="Pitted Surface">Pitted Surface</option>
+                <option value="Rolled-in Scale">Rolled-in Scale</option>
+                <option value="Scratches">Scratches</option>
+              </select>
+              <div style="display:flex;gap:6px">
+                <input type="date" id="rep-from" style="flex:1;background:var(--bg-beige);border:1px solid var(--border-light);border-radius:var(--radius-pill);padding:5px 8px;font-size:11px;outline:none" />
+                <input type="date" id="rep-to" style="flex:1;background:var(--bg-beige);border:1px solid var(--border-light);border-radius:var(--radius-pill);padding:5px 8px;font-size:11px;outline:none" />
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="exportFilteredCsv()">Export Filtered CSV</button>
+        </div>
+
+        <div class="report-card">
+          <div>
+            <div class="amber-icon-box" style="margin-bottom:18px">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <h4>Analytics Summary CSV</h4>
+            <p>Download aggregated statistical distribution metrics, category shares, and occurrence percentages.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="exportAnalyticsCsv()">Export Analytics CSV</button>
+        </div>
+
+        <div class="report-card">
+          <div>
+            <div class="amber-icon-box" style="margin-bottom:18px">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <h4>Printable Quality Certificate</h4>
+            <p>Render an official clean executive print sheet optimized for physical QA sign-off or PDF printing.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="printReport()">Open Print View</button>
+        </div>
+      </div>
+
+      <div id="reports-status" style="font-size:13px;color:var(--text-muted);font-weight:600"></div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════
+         SECTION 6: MODEL INFORMATION
+    ════════════════════════════════════════════════════ -->
+    <div class="section" id="section-model-info">
+      <div style="margin-bottom:24px">
+        <div class="pill-tag soft">Deep Learning Engine</div>
+        <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin:8px 0 4px">Model Architecture & Benchmark Details</h2>
+        <p style="font-size:14px;color:var(--text-muted)">Technical specifications, dataset parameters, and deployment characteristics of the neural classifier.</p>
+      </div>
+
+      <div class="info-section">
+        <h3>
+          <span class="amber-icon-box" style="width:28px;height:28px"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg></span>
+          Runtime Model Health & Weights
+        </h3>
+        <div id="model-info-content">Loading status…</div>
+      </div>
+
+      <div class="info-section">
+        <h3>
+          <span class="amber-icon-box" style="width:28px;height:28px"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span>
+          Neural Network Architecture
+        </h3>
+        <div class="info-row"><div class="info-key">Base Backbone</div><div class="info-val">ResNet-18 (Residual Learning Framework)</div></div>
+        <div class="info-row"><div class="info-key">Training Methodology</div><div class="info-val">Transfer Learning (ImageNet → NEU-CLS)</div></div>
+        <div class="info-row"><div class="info-key">Input Resolution</div><div class="info-val">224 × 224 px (RGB Standardized)</div></div>
+        <div class="info-row"><div class="info-key">Image Normalization</div><div class="info-val">Mean: [0.485, 0.456, 0.406] · Std: [0.229, 0.224, 0.225]</div></div>
+        <div class="info-row"><div class="info-key">Output Dimension</div><div class="info-val">6 Defect Classes</div></div>
+        <div class="info-row"><div class="info-key">Final Activation</div><div class="info-val">Softmax Probability Distribution</div></div>
+      </div>
+
+      <div class="info-section">
+        <h3>
+          <span class="amber-icon-box" style="width:28px;height:28px"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+          NEU Surface Defect Database (NEU-CLS)
+        </h3>
+        <div class="info-row"><div class="info-key">Benchmark Standard</div><div class="info-val">Northeastern University (NEU) Metal Surface Defect Database</div></div>
+        <div class="info-row"><div class="info-key">Total Benchmark Samples</div><div class="info-val">1,800 Grayscale Surface Images (300 per class)</div></div>
+        <div class="info-row"><div class="info-key">Train / Validation / Test Split</div><div class="info-val">70% Training / 15% Validation / 15% Holdout Test</div></div>
+        <div class="info-row"><div class="info-key">Data Augmentations</div><div class="info-val">Random Horizontal/Vertical Flip, Rotation ±15°, ColorJitter</div></div>
+      </div>
+
+      <div class="info-section">
+        <h3>
+          <span class="amber-icon-box" style="width:28px;height:28px"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+          Supported Industrial Defect Classes
+        </h3>
+        <div class="classes-grid">
+          <div class="class-chip"><span style="color:#B36B00">●</span> Crazing (Micro-fissures)</div>
+          <div class="class-chip"><span style="color:#4338CA">●</span> Inclusion (Foreign bodies)</div>
+          <div class="class-chip"><span style="color:#BE185D">●</span> Patches (Surface flaws)</div>
+          <div class="class-chip"><span style="color:#C2410C">●</span> Pitted Surface (Cavitation)</div>
+          <div class="class-chip"><span style="color:#047857">●</span> Rolled-in Scale (Oxidation)</div>
+          <div class="class-chip"><span style="color:#A16207">●</span> Scratches (Linear abrasions)</div>
+        </div>
+      </div>
+
+      <!-- Operator Guidance Banner -->
+      <div class="info-section" style="border:1.5px solid var(--amber-border);background:var(--amber-soft)">
+        <h3 style="color:#B36B00;margin-bottom:10px">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Important Operator Notice: Binary Normal/Defect Classification
+        </h3>
+        <p style="font-size:13px;color:var(--text-dark);line-height:1.7">
+          All six NEU-CLS categories represent <strong>specific defect categories</strong>. The dataset does not contain an explicitly labeled "normal / defect-free" category. As a consequence, this system accurately identifies the most probable defect profile among the 6 supported classes, but should be verified by a certified quality inspector for high-consequence aerospace or automotive applications.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="app-footer">
+  <div class="container footer-row">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="brand-logo-icon" style="width:28px;height:28px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+      </div>
+      <div class="footer-text"><strong>SurfaceAI</strong> — Industrial Metal Surface Quality Platform</div>
+    </div>
+    <div class="footer-links">
+      <a href="javascript:navigate('overview')">Overview</a>
+      <a href="javascript:navigate('inspect')">New Inspection</a>
+      <a href="javascript:navigate('history')">History</a>
+      <a href="javascript:navigate('analytics')">Analytics</a>
+      <a href="javascript:navigate('model-info')">Model Info</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ════════════════════════════════════════════════
+     APPLICATION LOGIC & DATA FLOW (JavaScript)
+════════════════════════════════════════════════════ -->
+<script>
+/* ── State ─────────────────────────────────────────────────────── */
+const STATE = {
+  currentSection: 'overview',
+  histPage: 1,
+  histPerPage: 20,
+  histTotal: 0,
+  anDateFrom: '',
+  anDateTo: '',
+  anTab: 'daily',
+  lastResult: null,
+};
+
+const CHARTS = {};
+
+/* ── Class colors & Badges ─────────────────────────────────────── */
+const CLASS_COLORS = {
+  'Crazing':         '#F5A623',
+  'Inclusion':       '#6366F1',
+  'Patches':         '#EC4899',
+  'Pitted Surface':  '#F97316',
+  'Rolled-in Scale': '#10B981',
+  'Scratches':       '#EAB308',
+  'Total':           '#131417',
+};
+
+const PAGE_TITLES = {
+  overview:    'Overview',
+  inspect:     'New Inspection',
+  history:     'Inspection History',
+  analytics:   'Analytics',
+  reports:     'Reports',
+  'model-info':'Model Information',
+};
+
+function navigate(section) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  
+  const targetSec = document.getElementById('section-' + section);
+  if (targetSec) targetSec.classList.add('active');
+
+  const navEl = document.getElementById('nav-' + section);
+  if (navEl) navEl.classList.add('active');
+
+  STATE.currentSection = section;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (section === 'overview')    loadOverview();
+  if (section === 'history')     loadHistory(1);
+  if (section === 'analytics')   initAnalytics();
+  if (section === 'model-info')  loadModelInfo();
+}
+
+function toggleMobileNav() {
+  const d = document.getElementById('mobile-drawer');
+  d.style.display = (d.style.display === 'none' || !d.style.display) ? 'block' : 'none';
+}
+
+/* ── Notifications ─────────────────────────────────────────────── */
+function notify(msg, type = 'info', duration = 4000) {
+  const el = document.createElement('div');
+  el.className = `notif ${type}`;
+  el.innerHTML = `<span class="notif-msg">${escHtml(msg)}</span><button class="notif-close" onclick="this.parentElement.remove()">×</button>`;
+  document.getElementById('notifications').appendChild(el);
+  if (duration > 0) setTimeout(() => el.remove(), duration);
+}
+
+/* ── API helpers ───────────────────────────────────────────────── */
+async function api(path, opts = {}) {
+  const res = await fetch(path, opts);
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error(j.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso.replace('Z', '+00:00'));
+  return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function fmtPct(v) { return (v * 100).toFixed(1) + '%'; }
+
+function classBadge(cls) {
+  const map = {
+    'Crazing':         'badge-crazing',
+    'Inclusion':       'badge-inclusion',
+    'Patches':         'badge-patches',
+    'Pitted Surface':  'badge-pitted',
+    'Rolled-in Scale': 'badge-scale',
+    'Scratches':       'badge-scratches',
+  };
+  const c = map[cls] || 'badge-gray';
+  return `<span class="badge ${c}">● ${escHtml(cls)}</span>`;
+}
+
+function makeChart(id, type, data, opts = {}) {
+  if (CHARTS[id]) { CHARTS[id].destroy(); }
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  CHARTS[id] = new Chart(ctx, {
+    type,
+    data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#6D6B65', font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: 600 } } },
+        tooltip: {
+          backgroundColor: '#131417',
+          titleColor: '#FFFFFF',
+          bodyColor: '#E5DFD3',
+          borderColor: '#2A2B2F',
+          borderWidth: 1,
+          padding: 10,
+          cornerRadius: 8,
+        },
+        ...opts.plugins,
+      },
+      scales: opts.noScales ? undefined : {
+        x: { ticks: { color: '#6D6B65', font: { family: "'Plus Jakarta Sans', sans-serif", size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)' } },
+        y: { ticks: { color: '#6D6B65', font: { family: "'Plus Jakarta Sans', sans-serif", size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)' }, beginAtZero: true },
+      },
+      ...opts,
+    },
+  });
+}
+
+function daysAgo(n) {
+  const d = new Date(); d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+/* ══════════════════════════════════════════════════
+   OVERVIEW LOADER
+══════════════════════════════════════════════════ */
+async function loadOverview() {
+  try {
+    const [summary, cats, conf, daily] = await Promise.all([
+      api('/api/summary'),
+      api('/api/analytics/categories'),
+      api('/api/analytics/confidence'),
+      api('/api/analytics/daily?date_from=' + daysAgo(30)),
+    ]);
+
+    // Top counters
+    document.getElementById('topbar-total').textContent = summary.total || 0;
+    document.getElementById('kpi-total').textContent = summary.total || 0;
+    document.getElementById('kpi-most-common').textContent = summary.most_common_defect || 'None';
+
+    const recent = summary.recent || [];
+    if (recent.length) {
+      const avg = recent.reduce((s, r) => s + r.confidence, 0) / recent.length;
+      document.getElementById('kpi-avg-conf').textContent = fmtPct(avg);
+    } else {
+      document.getElementById('kpi-avg-conf').textContent = '—';
+    }
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayRows = (daily.datasets.find(d => d.label === 'Total') || {}).data || [];
+    const todayIdx = (daily.labels || []).indexOf(todayStr);
+    document.getElementById('kpi-today').textContent = todayIdx >= 0 ? (todayRows[todayIdx] || 0) : 0;
+
+    if (summary.latest) {
+      document.getElementById('kpi-latest-class').textContent = summary.latest.predicted_class;
+      document.getElementById('kpi-latest-time').textContent = fmtDate(summary.latest.timestamp_utc);
+    } else {
+      document.getElementById('kpi-latest-class').textContent = '—';
+      document.getElementById('kpi-latest-time').textContent = 'No records';
+    }
+
+    // Category Doughnut
+    if (cats.labels && cats.labels.length) {
+      const flamingoCatColors = cats.labels.map(l => CLASS_COLORS[l] || '#F5A623');
+      makeChart('ov-category-chart', 'doughnut', {
+        labels: cats.labels,
+        datasets: [{ data: cats.data, backgroundColor: flamingoCatColors, borderWidth: 2, borderColor: '#FFFFFF', hoverOffset: 6 }],
+      }, { noScales: true, plugins: { legend: { position: 'right', labels: { color: '#6D6B65', font: { size: 11, weight: 600 } } } } });
+    }
+
+    // Confidence Bar
+    if (conf.labels && conf.labels.length) {
+      makeChart('ov-confidence-chart', 'bar', {
+        labels: conf.labels,
+        datasets: [{ label: 'Count', data: conf.data, backgroundColor: '#F5A623', borderRadius: 6 }],
+      });
+    }
+
+    // Daily Bar Chart
+    if (daily.labels && daily.labels.length) {
+      makeChart('ov-daily-chart', 'bar', {
+        labels: daily.labels,
+        datasets: daily.datasets.filter(d => d.label !== 'Total').map(d => ({
+          ...d,
+          backgroundColor: CLASS_COLORS[d.label] || d.backgroundColor,
+          borderRadius: 4
+        })),
+      }, { plugins: { legend: { labels: { color: '#6D6B65', font: { size: 11, weight: 600 } } } } });
+    }
+
+    // Recent Table
+    const tbody = document.getElementById('recent-tbody');
+    if (recent.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="table-empty">No inspections yet. <button onclick="navigate(\'inspect\')" class="btn btn-amber btn-sm" style="margin-left:12px">Upload your first image →</button></td></tr>';
+    } else {
+      tbody.innerHTML = recent.map(r => `
+        <tr>
+          <td><span style="font-family:var(--mono);color:var(--text-muted);font-weight:700">#${r.id}</span></td>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${escHtml(r.filename)}">${escHtml(r.filename)}</td>
+          <td>${classBadge(r.predicted_class)}</td>
+          <td><span style="font-family:var(--mono);font-weight:700">${fmtPct(r.confidence)}</span></td>
+          <td><span style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">${escHtml(r.model_version)}</span></td>
+          <td style="color:var(--text-muted)">${fmtDate(r.timestamp_utc)}</td>
+        </tr>`).join('');
+    }
+  } catch (e) {
+    notify('Failed to load overview: ' + e.message, 'error');
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   UPLOAD & INFERENCE
+══════════════════════════════════════════════════ */
+let selectedFile = null;
+let scanResult = null;
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+function handleDragLeave() { document.getElementById('upload-zone').classList.remove('drag-over'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]);
+}
+function handleFileSelect(e) { if (e.target.files.length) processFile(e.target.files[0]); }
+
+function processFile(file) {
+  const allowed = ['image/jpeg', 'image/png'];
+  if (!allowed.includes(file.type)) { notify('Invalid file type. Please upload a JPG or PNG.', 'error'); return; }
+  if (file.size > 16 * 1024 * 1024) { notify('File exceeds 16 MB limit.', 'error'); return; }
+
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('preview-img').src = e.target.result;
+    document.getElementById('preview-area').style.display = 'block';
+    document.getElementById('upload-zone').style.display = 'none';
+    document.getElementById('preview-name').textContent = file.name;
+    document.getElementById('preview-meta').textContent = `${(file.size / 1024).toFixed(1)} KB · ${file.type}`;
+
+    const img = new Image();
+    img.onload = () => {
+      document.getElementById('preview-meta').textContent += ` · ${img.naturalWidth}×${img.naturalHeight}px`;
+    };
+    img.src = e.target.result;
+
+    document.getElementById('scan-btn').disabled = false;
+    document.getElementById('scan-status-msg').textContent = 'Sample ready for neural scan.';
+    document.getElementById('result-panel').style.display = 'none';
+    document.getElementById('result-empty').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetUpload() {
+  selectedFile = null;
+  scanResult = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('preview-area').style.display = 'none';
+  document.getElementById('upload-zone').style.display = 'block';
+  document.getElementById('scan-btn').disabled = true;
+  document.getElementById('scan-status-msg').textContent = '';
+  document.getElementById('scan-overlay').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'none';
+  document.getElementById('result-empty').style.display = 'block';
+  document.getElementById('gradcam-section').style.display = 'none';
+}
+
+async function runScan() {
+  if (!selectedFile) return;
+  const btn = document.getElementById('scan-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="scan-spinner" style="width:16px;height:16px;border-width:2px"></div> Processing…';
+  document.getElementById('scan-status-msg').textContent = '';
+
+  const overlay = document.getElementById('scan-overlay');
+  overlay.style.display = 'flex';
+
+  const fd = new FormData();
+  fd.append('image', selectedFile);
+
+  try {
+    const result = await fetch('/api/inspect', { method: 'POST', body: fd });
+    const data = await result.json();
+
+    overlay.style.display = 'none';
+
+    if (!result.ok) {
+      notify(data.error || 'Inference failed.', 'error', 0);
+      if (data.model_unavailable) {
+        document.getElementById('scan-status-msg').textContent = 'Model not loaded. Train first: python train.py';
+      }
+      return;
+    }
+
+    scanResult = data;
+    STATE.lastResult = data;
+    renderResult(data);
+    notify(`Inspection #${data.inspection_id} completed — ${data.predicted_class}`, 'success');
+
+  } catch (err) {
+    overlay.style.display = 'none';
+    notify('Network error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Run Defect Scan`;
+  }
+}
+
+function renderResult(data) {
+  document.getElementById('result-empty').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'block';
+
+  document.getElementById('result-class').textContent = data.predicted_class;
+  document.getElementById('result-meta').textContent = `Inspection Record #${data.inspection_id} · ${fmtDate(data.timestamp)}`;
+  document.getElementById('result-badge').className = 'badge badge-red';
+  document.getElementById('result-badge').textContent = 'DEFECT DETECTED';
+
+  document.getElementById('ri-class').textContent = data.predicted_class;
+  document.getElementById('ri-conf-pct').textContent = fmtPct(data.confidence);
+  document.getElementById('ri-conf-bar').style.width = (data.confidence * 100) + '%';
+  document.getElementById('ri-id').textContent = '#' + data.inspection_id;
+  document.getElementById('ri-date').textContent = fmtDate(data.timestamp);
+  document.getElementById('ri-filename').textContent = data.filename;
+  document.getElementById('ri-model').textContent = data.model_version;
+
+  // Top 3
+  const top3 = document.getElementById('top3-list');
+  top3.innerHTML = (data.top3 || []).map((item, i) => `
+    <div class="top3-item">
+      <span class="top3-cls">${escHtml(item.class)}</span>
+      <div class="top3-bar"><div class="top3-fill" style="width:${(item.confidence*100).toFixed(1)}%;background:${i===0?'var(--amber)':'var(--text-muted)'}"></div></div>
+      <span class="top3-pct" style="color:${i===0?'var(--amber-hover)':'var(--text-muted)'}">${fmtPct(item.confidence)}</span>
+    </div>`).join('');
+
+  // Grad-CAM
+  if (data.gradcam) {
+    document.getElementById('gradcam-img').src = 'data:image/jpeg;base64,' + data.gradcam;
+    document.getElementById('gradcam-section').style.display = 'block';
+  }
+}
+
+function downloadResultJson() {
+  if (!scanResult) return;
+  const blob = new Blob([JSON.stringify(scanResult, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `surface_inspection_${scanResult.inspection_id}.json`;
+  a.click();
+}
+
+/* ══════════════════════════════════════════════════
+   HISTORY TABLE & FILTERING
+══════════════════════════════════════════════════ */
+let histDebounceTimer;
+function debounceHistory() { clearTimeout(histDebounceTimer); histDebounceTimer = setTimeout(() => loadHistory(1), 400); }
+
+function clearHistoryFilters() {
+  document.getElementById('hist-search').value = '';
+  document.getElementById('hist-category').value = '';
+  document.getElementById('hist-from').value = '';
+  document.getElementById('hist-to').value = '';
+  document.getElementById('hist-sort').value = 'timestamp_utc|desc';
+  loadHistory(1);
+}
+
+async function loadHistory(page = 1) {
+  STATE.histPage = page;
+  const search   = document.getElementById('hist-search').value.trim();
+  const category = document.getElementById('hist-category').value;
+  const from     = document.getElementById('hist-from').value;
+  const to       = document.getElementById('hist-to').value;
+  const [sort_by, sort_order] = document.getElementById('hist-sort').value.split('|');
+
+  const params = new URLSearchParams({
+    search, category, sort_by, sort_order,
+    page, per_page: STATE.histPerPage,
+  });
+  if (from) params.set('date_from', from);
+  if (to)   params.set('date_to', to);
+
+  const tbody = document.getElementById('hist-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Loading records…</td></tr>';
+
+  try {
+    const data = await api('/api/history?' + params);
+    STATE.histTotal = data.total;
+
+    if (data.items.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="table-empty">No records found matching current criteria.</td></tr>';
+    } else {
+      tbody.innerHTML = data.items.map(r => `
+        <tr>
+          <td><span style="font-family:var(--mono);color:var(--text-muted);font-weight:700">#${r.id}</span></td>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${escHtml(r.filename)}">${escHtml(r.filename)}</td>
+          <td>${classBadge(r.predicted_class)}</td>
+          <td><span style="font-family:var(--mono);font-weight:700">${fmtPct(r.confidence)}</span></td>
+          <td><span style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">${escHtml(r.model_version)}</span></td>
+          <td style="color:var(--text-muted)">${fmtDate(r.timestamp_utc)}</td>
+          <td>
+            <button class="btn btn-outline btn-sm" style="color:#DC2626;border-color:rgba(239,68,68,0.3)" onclick="deleteInspection(${r.id})">
+              Delete
+            </button>
+          </td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('hist-page-info').textContent = `${data.total} records · Page ${data.page} of ${data.pages}`;
+    renderPagination(data.page, data.pages);
+
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="7" class="table-empty" style="color:#EF4444">${escHtml(e.message)}</td></tr>`;
+  }
+}
+
+function renderPagination(page, pages) {
+  const container = document.getElementById('hist-page-btns');
+  if (pages <= 1) { container.innerHTML = ''; return; }
+  let html = `<button class="page-btn" ${page===1?'disabled':''} onclick="loadHistory(${page-1})">‹</button>`;
+  const start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
+  if (start > 1) html += `<button class="page-btn" onclick="loadHistory(1)">1</button>${start > 2 ? '<span style="color:var(--text-muted);padding:0 4px">…</span>' : ''}`;
+  for (let p = start; p <= end; p++) {
+    html += `<button class="page-btn ${p===page?'active':''}" onclick="loadHistory(${p})">${p}</button>`;
+  }
+  if (end < pages) html += `${end < pages-1 ? '<span style="color:var(--text-muted);padding:0 4px">…</span>' : ''}<button class="page-btn" onclick="loadHistory(${pages})">${pages}</button>`;
+  html += `<button class="page-btn" ${page===pages?'disabled':''} onclick="loadHistory(${page+1})">›</button>`;
+  container.innerHTML = html;
+}
+
+async function deleteInspection(id) {
+  if (!confirm(`Permanently delete inspection record #${id}?`)) return;
+  try {
+    await api(`/api/history/${id}`, { method: 'DELETE' });
+    notify(`Record #${id} deleted.`, 'success');
+    loadHistory(STATE.histPage);
+  } catch (e) {
+    notify('Delete failed: ' + e.message, 'error');
+  }
+}
+
+function exportCsv() { window.location.href = '/api/export/csv'; }
+
+function exportFilteredCsv() {
+  const cat  = document.getElementById('rep-category').value;
+  const from = document.getElementById('rep-from').value;
+  const to   = document.getElementById('rep-to').value;
+  const p = new URLSearchParams();
+  if (cat)  p.set('category', cat);
+  if (from) p.set('date_from', from);
+  if (to)   p.set('date_to', to);
+  window.location.href = '/api/export/csv?' + p;
+  document.getElementById('reports-status').textContent = 'Filtered CSV download started…';
+}
+
+async function exportAnalyticsCsv() {
+  try {
+    const cats = await api('/api/analytics/categories');
+    const rows = [['Category','Count','Percentage']];
+    const total = cats.data.reduce((a, b) => a + b, 0);
+    cats.labels.forEach((l, i) => rows.push([l, cats.data[i], total ? ((cats.data[i]/total)*100).toFixed(1)+'%' : '0%']));
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'surfaceai_defect_analytics.csv'; a.click();
+    document.getElementById('reports-status').textContent = 'Analytics CSV downloaded successfully.';
+  } catch(e) { notify('Export failed: ' + e.message, 'error'); }
+}
+
+function printReport() {
+  window.print();
+}
+
+/* ══════════════════════════════════════════════════
+   ANALYTICS TAB SWITCHER
+══════════════════════════════════════════════════ */
+function initAnalytics() {
+  loadDailyAnalytics();
+  populateYearSelect();
+}
+
+function switchAnalyticsTab(tab) {
+  STATE.anTab = tab;
+  ['daily','monthly','yearly','categories','confidence'].forEach(t => {
+    document.getElementById('an-' + t).style.display = (t === tab) ? '' : 'none';
+  });
+  document.querySelectorAll('.analytics-tab').forEach((el, i) => {
+    el.classList.toggle('active', ['daily','monthly','yearly','categories','confidence'][i] === tab);
+  });
+  if (tab === 'daily')      loadDailyAnalytics();
+  if (tab === 'monthly')    loadMonthly();
+  if (tab === 'yearly')     loadYearly();
+  if (tab === 'categories') loadCategories();
+  if (tab === 'confidence') loadConfidenceAnalytics();
+}
+
+function setPeriod(p) {
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const today = new Date();
+  let from = '', to = today.toISOString().slice(0, 10);
+  if (p === 'today')     from = to;
+  else if (p === 'yesterday') { const y = new Date(today); y.setDate(y.getDate()-1); from = to = y.toISOString().slice(0,10); }
+  else if (p === '7d')   { const d = new Date(today); d.setDate(d.getDate()-6); from = d.toISOString().slice(0,10); }
+  else if (p === '30d')  { const d = new Date(today); d.setDate(d.getDate()-29); from = d.toISOString().slice(0,10); }
+  else if (p === 'month') { from = today.toISOString().slice(0,7) + '-01'; }
+  else if (p === 'year')  { from = today.getFullYear() + '-01-01'; }
+  else if (p === 'all')   { from = ''; to = ''; }
+  STATE.anDateFrom = from;
+  STATE.anDateTo   = to === today.toISOString().slice(0,10) && p !== 'today' && p !== 'yesterday' ? '' : to;
+  document.getElementById('an-from').value = from;
+  document.getElementById('an-to').value   = (p === 'all') ? '' : to;
+  reloadActiveTab();
+}
+
+function applyCustomPeriod() {
+  STATE.anDateFrom = document.getElementById('an-from').value;
+  STATE.anDateTo   = document.getElementById('an-to').value;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  reloadActiveTab();
+}
+
+function reloadActiveTab() {
+  const tab = STATE.anTab;
+  if (tab === 'daily')      loadDailyAnalytics();
+  if (tab === 'monthly')    loadMonthly();
+  if (tab === 'yearly')     loadYearly();
+  if (tab === 'categories') loadCategories();
+  if (tab === 'confidence') loadConfidenceAnalytics();
+}
+
+async function loadDailyAnalytics() {
+  const params = new URLSearchParams();
+  if (STATE.anDateFrom) params.set('date_from', STATE.anDateFrom);
+  if (STATE.anDateTo)   params.set('date_to', STATE.anDateTo);
+  try {
+    const data = await api('/api/analytics/daily?' + params);
+    if (!data.labels || !data.labels.length) {
+      if (CHARTS['an-daily-chart']) { CHARTS['an-daily-chart'].destroy(); delete CHARTS['an-daily-chart']; }
+      const ctx = document.getElementById('an-daily-chart');
+      if (ctx) ctx.parentElement.innerHTML = '<div class="chart-empty">No inspection records for the chosen date range</div>';
+      return;
+    }
+    const datasets = data.datasets.filter(d => d.label !== 'Total').map(d => ({
+      ...d,
+      backgroundColor: CLASS_COLORS[d.label] || d.backgroundColor,
+      borderRadius: 4,
+      borderWidth: 0,
+    }));
+    makeChart('an-daily-chart', 'bar', { labels: data.labels, datasets }, {
+      scales: {
+        x: { stacked: true, ticks: { color: '#6D6B65' }, grid: { color: 'rgba(0,0,0,0.04)' } },
+        y: { stacked: true, ticks: { color: '#6D6B65' }, grid: { color: 'rgba(0,0,0,0.04)' }, beginAtZero: true },
+      },
+    });
+  } catch(e) { notify('Daily analytics error: ' + e.message, 'error'); }
+}
+
+async function populateYearSelect() {
+  try {
+    const data = await api('/api/analytics/yearly');
+    const years = [...new Set(data.labels || [])].sort((a,b) => b-a);
+    const sel = document.getElementById('an-year-select');
+    sel.innerHTML = '<option value="">All Operating Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+  } catch {}
+}
+
+async function loadMonthly() {
+  const year = document.getElementById('an-year-select').value;
+  const params = year ? new URLSearchParams({ year }) : new URLSearchParams();
+  try {
+    const data = await api('/api/analytics/monthly?' + params);
+    if (!data.labels || !data.labels.length) {
+      if (CHARTS['an-monthly-chart']) { CHARTS['an-monthly-chart'].destroy(); delete CHARTS['an-monthly-chart']; }
+      const ctx = document.getElementById('an-monthly-chart');
+      if (ctx) ctx.parentElement.innerHTML = '<div class="chart-empty">No records for selected year</div>';
+      return;
+    }
+    const datasets = data.datasets.filter(d => d.label !== 'Total').map(d => ({
+      ...d,
+      backgroundColor: CLASS_COLORS[d.label] || d.backgroundColor,
+      borderRadius: 4,
+      borderWidth: 0,
+    }));
+    makeChart('an-monthly-chart', 'bar', { labels: data.labels, datasets }, {
+      scales: {
+        x: { stacked: true, ticks: { color: '#6D6B65' }, grid: { color: 'rgba(0,0,0,0.04)' } },
+        y: { stacked: true, ticks: { color: '#6D6B65' }, grid: { color: 'rgba(0,0,0,0.04)' }, beginAtZero: true },
+      },
+    });
+  } catch(e) { notify('Monthly analytics error: ' + e.message, 'error'); }
+}
+
+async function loadYearly() {
+  try {
+    const data = await api('/api/analytics/yearly');
+    if (!data.labels || !data.labels.length) {
+      if (CHARTS['an-yearly-chart']) { CHARTS['an-yearly-chart'].destroy(); delete CHARTS['an-yearly-chart']; }
+      const ctx = document.getElementById('an-yearly-chart');
+      if (ctx) ctx.parentElement.innerHTML = '<div class="chart-empty">No annual records yet</div>';
+      return;
+    }
+    const datasets = data.datasets.filter(d => d.label !== 'Total').map(d => ({
+      ...d,
+      backgroundColor: CLASS_COLORS[d.label] || d.backgroundColor,
+      borderRadius: 4,
+      borderWidth: 0,
+    }));
+    makeChart('an-yearly-chart', 'bar', { labels: data.labels, datasets }, {
+      scales: {
+        x: { stacked: true, ticks: { color: '#6D6B65' }, grid: { color: 'rgba(0,0,0,0.04)' } },
+        y: { stacked: true, ticks: { color: '#6D6B65' }, grid: { color: 'rgba(0,0,0,0.04)' }, beginAtZero: true },
+      },
+    });
+  } catch(e) { notify('Yearly analytics error: ' + e.message, 'error'); }
+}
+
+async function loadCategories() {
+  const params = new URLSearchParams();
+  if (STATE.anDateFrom) params.set('date_from', STATE.anDateFrom);
+  if (STATE.anDateTo)   params.set('date_to', STATE.anDateTo);
+  try {
+    const cats = await api('/api/analytics/categories?' + params);
+    if (!cats.labels || !cats.labels.length) {
+      if (CHARTS['an-cat-chart']) { CHARTS['an-cat-chart'].destroy(); delete CHARTS['an-cat-chart']; }
+      const ctx = document.getElementById('an-cat-chart');
+      if (ctx) ctx.parentElement.innerHTML = '<div class="chart-empty">No category data for selected period</div>';
+      document.getElementById('an-cat-table').innerHTML = '';
+      return;
+    }
+    const customColors = cats.labels.map(l => CLASS_COLORS[l] || '#F5A623');
+    makeChart('an-cat-chart', 'doughnut', {
+      labels: cats.labels,
+      datasets: [{ data: cats.data, backgroundColor: customColors, borderWidth: 2, borderColor: '#FFFFFF', hoverOffset: 8 }],
+    }, { noScales: true, plugins: { legend: { position: 'right', labels: { color: '#6D6B65', font: { size: 11, weight: 600 } } } } });
+
+    document.getElementById('an-cat-table').innerHTML = cats.labels.map((l, i) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-light);font-size:13px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${customColors[i]};display:inline-block"></span>
+          <span style="font-weight:700">${escHtml(l)}</span>
+        </div>
+        <div style="display:flex;gap:20px;text-align:right">
+          <span style="font-weight:800;font-family:var(--mono)">${cats.data[i]}</span>
+          <span style="color:var(--text-muted);font-weight:600;width:50px">${cats.percentages[i]}%</span>
+        </div>
+      </div>`).join('') + `<div style="font-size:12px;color:var(--text-muted);margin-top:12px;font-weight:700">Total Count: ${cats.total}</div>`;
+  } catch(e) { notify('Category analytics error: ' + e.message, 'error'); }
+}
+
+async function loadConfidenceAnalytics() {
+  const cls  = document.getElementById('an-conf-class').value;
+  const params = new URLSearchParams();
+  if (cls)              params.set('category', cls);
+  if (STATE.anDateFrom) params.set('date_from', STATE.anDateFrom);
+  if (STATE.anDateTo)   params.set('date_to', STATE.anDateTo);
+  try {
+    const conf = await api('/api/analytics/confidence?' + params);
+    makeChart('an-conf-chart', 'bar', {
+      labels: conf.labels,
+      datasets: [{ label: 'Inspections', data: conf.data, backgroundColor: '#F5A623', borderRadius: 6 }],
+    }, {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6D6B65' }, grid: { color: 'rgba(0,0,0,0.04)' } },
+        y: { ticks: { color: '#6D6B65' }, grid: { color: 'rgba(0,0,0,0.04)' }, beginAtZero: true },
+      },
+    });
+  } catch(e) { notify('Confidence analytics error: ' + e.message, 'error'); }
+}
+
+/* ══════════════════════════════════════════════════
+   MODEL INFORMATION
+══════════════════════════════════════════════════ */
+async function loadModelInfo() {
+  const el = document.getElementById('model-info-content');
+  try {
+    const status = await api('/api/model-status');
+    const badge = document.getElementById('sidebar-model-status');
+    if (status.loaded) {
+      badge.innerHTML = '<div class="status-dot green"></div><span style="font-size:12px;font-weight:700;color:var(--text-dark)">AI Ready</span>';
+    } else {
+      badge.innerHTML = '<div class="status-dot red"></div><span style="font-size:12px;font-weight:700;color:var(--text-dark)">Not Loaded</span>';
+    }
+    el.innerHTML = `
+      <div class="info-row"><div class="info-key">Inference Availability</div><div class="info-val" style="color:${status.loaded?'#10B981':'#EF4444'}">${status.loaded ? '✓ Operational (Model Loaded)' : '✗ Checkpoint Missing'}</div></div>
+      <div class="info-row"><div class="info-key">Model Architecture Version</div><div class="info-val">${escHtml(status.version)}</div></div>
+      <div class="info-row"><div class="info-key">Hardware Compute Device</div><div class="info-val">${escHtml(status.device)}</div></div>
+      <div class="info-row"><div class="info-key">Active Checkpoint Path</div><div class="info-val" style="font-size:11px;word-break:break-all">${escHtml(status.checkpoint)}</div></div>
+      ${status.error ? `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:14px;margin-top:12px;font-size:13px;color:#DC2626">${escHtml(status.error)}</div>` : ''}
+    `;
+  } catch(e) {
+    el.innerHTML = `<div style="color:#EF4444">${escHtml(e.message)}</div>`;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  loadOverview();
+  api('/api/model-status').then(s => {
+    const badge = document.getElementById('sidebar-model-status');
+    badge.innerHTML = s.loaded
+      ? '<div class="status-dot green"></div><span style="font-size:12px;font-weight:700;color:var(--text-dark)">AI Ready</span>'
+      : '<div class="status-dot red"></div><span style="font-size:12px;font-weight:700;color:var(--text-dark)">Not Loaded</span>';
+  }).catch(() => {
+    document.getElementById('sidebar-model-status').innerHTML = '<div class="status-dot red"></div><span style="font-size:12px">Unavailable</span>';
+  });
+});
+</script>
+</body>
+</html>
