@@ -2869,13 +2869,32 @@ function notify(msg, type = 'info', duration = 4000) {
 }
 
 /* ── API helpers ───────────────────────────────────────────────── */
+async function safeJsonParse(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    if (res.status === 502) {
+      throw new Error('Cloud worker restarting or waking up (502 Bad Gateway). Please wait 15 seconds and try again.');
+    }
+    if (res.status === 504) {
+      throw new Error('Request timed out (504 Gateway Timeout). The server is loading model weights, please try again.');
+    }
+    if (res.status === 413) {
+      throw new Error('Image file is too large (413 Payload Too Large). Please upload an image under 5 MB.');
+    }
+    const cleanMsg = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+    throw new Error(`Server returned HTTP ${res.status}: ${cleanMsg || 'Non-JSON response'}`);
+  }
+}
+
 async function api(path, opts = {}) {
   const res = await fetch(path, opts);
+  const data = await safeJsonParse(res);
   if (!res.ok) {
-    const j = await res.json().catch(() => ({}));
-    throw new Error(j.error || `HTTP ${res.status}`);
+    throw new Error(data.error || `HTTP ${res.status}`);
   }
-  return res.json();
+  return data;
 }
 
 function escHtml(str) {
@@ -3104,7 +3123,7 @@ async function runScan() {
 
   try {
     const result = await fetch('/api/inspect', { method: 'POST', body: fd });
-    const data = await result.json();
+    const data = await safeJsonParse(result);
 
     overlay.style.display = 'none';
 
@@ -3774,7 +3793,7 @@ async function scanCurrentFrame() {
       body: JSON.stringify({ image: frameDataUri }),
     });
     if (!res.ok) return;
-    const data = await res.json();
+    const data = await safeJsonParse(res);
     const latency = Math.round(performance.now() - t0);
 
     latestCameraTelemetry = data;
