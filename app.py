@@ -20,7 +20,7 @@ from werkzeug.utils import secure_filename
 
 import database as db
 import analytics as an
-from model import load_model, get_model_status, predict, grad_cam
+from model import load_model, get_model_status, predict, grad_cam, analyze_defect, DEFECT_METADATA
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -42,6 +42,42 @@ def allowed_file(filename: str) -> bool:
         "." in filename
         and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
     )
+
+
+def _extract_image_bytes(req) -> tuple[bytes | None, str | None, str | None]:
+    """
+    Extracts image bytes from either multipart/form-data or JSON base64.
+    Returns (image_bytes, filename, error_message).
+    """
+    # 1. Multipart file upload
+    if "image" in req.files:
+        f = req.files["image"]
+        if not f or not f.filename:
+            return None, None, "No file selected."
+        filename = secure_filename(f.filename)
+        if not allowed_file(filename):
+            return None, None, "Unsupported file type. Use JPG or PNG."
+        b = f.read()
+        if len(b) == 0:
+            return None, None, "Uploaded file is empty."
+        return b, filename, None
+
+    # 2. JSON or form-encoded base64 payload
+    data = req.get_json(silent=True) or req.form
+    if data and "image" in data:
+        raw_b64 = data["image"]
+        if not raw_b64:
+            return None, None, "Image data is empty."
+        if "," in raw_b64:
+            raw_b64 = raw_b64.split(",", 1)[1]
+        try:
+            b = base64.b64decode(raw_b64)
+            filename = data.get("filename", f"camera_scan_{_now_utc_compact()}.jpg")
+            return b, filename, None
+        except Exception as exc:
+            return None, None, f"Invalid base64 encoding: {exc}"
+
+    return None, None, "No image field in request."
 
 
 # ── Initialise DB and load model on startup ───────────────────────────────────
@@ -72,21 +108,9 @@ def model_status():
 # ── Inspect (upload + predict) ────────────────────────────────────────────────
 @app.route("/api/inspect", methods=["POST"])
 def inspect():
-    # Validate upload
-    if "image" not in request.files:
-        return jsonify({"error": "No image field in request."}), 400
-
-    f = request.files["image"]
-    if not f or not f.filename:
-        return jsonify({"error": "No file selected."}), 400
-
-    filename = secure_filename(f.filename)
-    if not allowed_file(filename):
-        return jsonify({"error": "Unsupported file type. Use JPG or PNG."}), 400
-
-    image_bytes = f.read()
-    if len(image_bytes) == 0:
-        return jsonify({"error": "Uploaded file is empty."}), 400
+    image_bytes, filename, err = _extract_image_bytes(request)
+    if err:
+        return jsonify({"error": err}), 400
 
     # Verify the bytes are actually a decodable image
     try:
@@ -95,9 +119,9 @@ def inspect():
     except Exception as exc:
         return jsonify({"error": f"File cannot be decoded as an image: {exc}"}), 400
 
-    # Run inference
+    # Run inference & damage analysis
     try:
-        result = predict(image_bytes)
+        result = analyze_defect(image_bytes, include_gradcam=True)
     except RuntimeError as exc:
         return jsonify({"error": str(exc), "model_unavailable": True}), 503
     except ValueError as exc:
@@ -112,30 +136,177 @@ def inspect():
         predicted_class=result["predicted_class"],
         confidence=result["confidence"],
         class_probabilities=result["class_probabilities"],
-        defect_status=None,        # binary classification not yet available
+        defect_status=result.get("defect_status"),
         model_version=result["model_version"],
+        damage_percentage=result.get("damage_percentage", 0.0),
+        damage_severity=result.get("damage_severity", "Minor"),
     )
 
-    # Optional Grad-CAM
     gradcam_b64 = None
-    try:
-        gc_bytes = grad_cam(image_bytes)
-        if gc_bytes:
-            gradcam_b64 = base64.b64encode(gc_bytes).decode("ascii")
-    except Exception:
-        pass
+    if result.get("gradcam_bytes"):
+        gradcam_b64 = base64.b64encode(result["gradcam_bytes"]).decode("ascii")
 
     return jsonify({
         "inspection_id": inspection_id,
         "filename": filename,
         "predicted_class": result["predicted_class"],
         "confidence": result["confidence"],
+        "accuracy_percent": result["accuracy_percent"],
+        "damage_percentage": result["damage_percentage"],
+        "damage_severity": result["damage_severity"],
+        "defect_status": result["defect_status"],
+        "defect_label": result["defect_label"],
+        "defect_color": result["defect_color"],
+        "defect_description": result["defect_description"],
+        "defect_boxes": result["defect_boxes"],
         "class_probabilities": result["class_probabilities"],
         "top3": result["top3"],
         "model_version": result["model_version"],
         "gradcam": gradcam_b64,
         "timestamp": _now_utc(),
     })
+
+
+# ── Live Camera Scanning Endpoint (High-Speed Frame Analysis) ─────────────────
+@app.route("/api/camera/scan-frame", methods=["POST"])
+def camera_scan_frame():
+    """
+    Analyzes a single camera video frame with bounding boxes and damage accuracy.
+    Fast execution by skipping Grad-CAM rendering during continuous live feed.
+    """
+    image_bytes, filename, err = _extract_image_bytes(request)
+    if err:
+        return jsonify({"error": err}), 400
+
+    try:
+        result = analyze_defect(image_bytes, include_gradcam=False)
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc), "model_unavailable": True}), 503
+    except Exception as exc:
+        return jsonify({"error": f"Camera frame scan error: {exc}"}), 500
+
+    return jsonify({
+        "predicted_class": result["predicted_class"],
+        "confidence": result["confidence"],
+        "accuracy_percent": result["accuracy_percent"],
+        "damage_percentage": result["damage_percentage"],
+        "damage_severity": result["damage_severity"],
+        "defect_status": result["defect_status"],
+        "defect_label": result["defect_label"],
+        "defect_color": result["defect_color"],
+        "defect_description": result["defect_description"],
+        "defect_boxes": result["defect_boxes"],
+        "class_probabilities": result["class_probabilities"],
+        "top3": result["top3"],
+        "timestamp": _now_utc(),
+    })
+
+
+# ── Camera Snapshot & Audit Endpoint ──────────────────────────────────────────
+@app.route("/api/camera/snapshot", methods=["POST"])
+def camera_snapshot():
+    """
+    Freezes a camera frame, computes full Grad-CAM explainability, damage accuracy,
+    and logs the inspection to database history.
+    """
+    image_bytes, filename, err = _extract_image_bytes(request)
+    if err:
+        return jsonify({"error": err}), 400
+
+    try:
+        result = analyze_defect(image_bytes, include_gradcam=True)
+    except Exception as exc:
+        return jsonify({"error": f"Snapshot analysis failed: {exc}"}), 500
+
+    snap_name = filename or f"camera_audit_{_now_utc_compact()}.jpg"
+    inspection_id = db.save_inspection(
+        filename=snap_name,
+        predicted_class=result["predicted_class"],
+        confidence=result["confidence"],
+        class_probabilities=result["class_probabilities"],
+        defect_status=result.get("defect_status"),
+        model_version=result["model_version"],
+        damage_percentage=result.get("damage_percentage", 0.0),
+        damage_severity=result.get("damage_severity", "Minor"),
+    )
+
+    gradcam_b64 = None
+    if result.get("gradcam_bytes"):
+        gradcam_b64 = base64.b64encode(result["gradcam_bytes"]).decode("ascii")
+
+    return jsonify({
+        "inspection_id": inspection_id,
+        "filename": snap_name,
+        "predicted_class": result["predicted_class"],
+        "confidence": result["confidence"],
+        "accuracy_percent": result["accuracy_percent"],
+        "damage_percentage": result["damage_percentage"],
+        "damage_severity": result["damage_severity"],
+        "defect_status": result["defect_status"],
+        "defect_label": result["defect_label"],
+        "defect_color": result["defect_color"],
+        "defect_description": result["defect_description"],
+        "defect_boxes": result["defect_boxes"],
+        "class_probabilities": result["class_probabilities"],
+        "top3": result["top3"],
+        "gradcam": gradcam_b64,
+        "timestamp": _now_utc(),
+    })
+
+
+# ── Sample Surfaces for Camera Simulation ─────────────────────────────────────
+@app.route("/api/camera/samples")
+def camera_samples():
+    """
+    Returns 4 interactive sample defect materials (Tile, Fabric, Plastic part, Painted panel)
+    with data URIs for camera simulator testing.
+    """
+    from PIL import Image as PILImage, ImageDraw
+
+    def img_to_data_uri(img: PILImage.Image) -> str:
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=90)
+        return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+    # 1. Tile with Crack (Crazing)
+    img_tile = PILImage.new("RGB", (224, 224), color=(226, 222, 212))
+    d_tile = ImageDraw.Draw(img_tile)
+    for x in range(0, 224, 10):
+        d_tile.line([(x, 0), (x, 224)], fill=(218, 214, 204), width=1)
+    d_tile.rectangle([165, 145, 185, 165], fill=(205, 200, 190))
+    d_tile.line([(110, 25), (107, 60), (115, 95), (112, 130), (118, 175), (114, 205)], fill=(32, 28, 24), width=3)
+
+    # 2. Fabric with Stain (Patches)
+    img_fabric = PILImage.new("RGB", (224, 224), color=(35, 55, 115))
+    d_fabric = ImageDraw.Draw(img_fabric)
+    for y in range(0, 224, 5):
+        d_fabric.line([(0, y), (224, y)], fill=(45, 70, 135), width=1)
+    for x in range(0, 224, 5):
+        d_fabric.line([(x, 0), (x, 224)], fill=(45, 70, 135), width=1)
+    d_fabric.ellipse([140, 25, 195, 80], fill=(16, 24, 52))
+    d_fabric.line([(25, 140), (180, 128)], fill=(120, 140, 180), width=1)
+
+    # 3. Plastic Part with Speck (Inclusion)
+    img_plastic = PILImage.new("RGB", (224, 224), color=(175, 48, 28))
+    d_plastic = ImageDraw.Draw(img_plastic)
+    d_plastic.arc([35, 90, 115, 170], start=180, end=270, fill=(215, 140, 120), width=2)
+    d_plastic.ellipse([45, 160, 75, 190], fill=(155, 40, 22))
+    for sp in [(140, 60), (150, 75), (145, 90), (160, 70), (170, 85), (155, 100), (135, 80)]:
+        d_plastic.ellipse([sp[0]-3, sp[1]-3, sp[0]+3, sp[1]+3], fill=(20, 15, 15))
+
+    # 4. Painted Panel with Scratch (Scratches)
+    img_painted = PILImage.new("RGB", (224, 224), color=(28, 62, 112))
+    d_painted = ImageDraw.Draw(img_painted)
+    d_painted.ellipse([160, 160, 185, 185], fill=(38, 75, 130))
+    d_painted.ellipse([165, 165, 180, 180], fill=(22, 50, 95))
+    d_painted.line([(25, 195), (170, 48)], fill=(215, 235, 255), width=3)
+
+    return jsonify([
+        {"id": "tile", "name": "Tile", "expected": "Crack", "data_uri": img_to_data_uri(img_tile)},
+        {"id": "fabric", "name": "Fabric", "expected": "Stain", "data_uri": img_to_data_uri(img_fabric)},
+        {"id": "plastic", "name": "Plastic part", "expected": "Speck", "data_uri": img_to_data_uri(img_plastic)},
+        {"id": "painted", "name": "Painted panel", "expected": "Scratch", "data_uri": img_to_data_uri(img_painted)},
+    ])
 
 
 # ── Dashboard summary ─────────────────────────────────────────────────────────

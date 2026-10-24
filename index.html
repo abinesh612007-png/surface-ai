@@ -1304,6 +1304,359 @@ tr:hover td { background: var(--bg-beige-light); }
   .classes-grid { grid-template-columns: 1fr; }
   .hero-headline { font-size: 28px; }
 }
+
+/* ─── AI Defect Camera & Damage HUD Scanner ────────────────── */
+.camera-layout-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 980px) {
+  .camera-layout-grid { grid-template-columns: 1fr; }
+}
+
+.camera-viewport-card {
+  background: #0D0E12;
+  border: 1px solid #23252C;
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.camera-header-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 12px;
+}
+
+.camera-hud-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #00E5FF;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.hud-pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #00E5FF;
+  box-shadow: 0 0 12px #00E5FF;
+  animation: hudPulse 1.5s infinite;
+}
+.hud-pulse-dot.scanning {
+  background: #10B981;
+  box-shadow: 0 0 12px #10B981;
+}
+.hud-pulse-dot.defect {
+  background: #FF1744;
+  box-shadow: 0 0 14px #FF1744;
+}
+
+@keyframes hudPulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+.camera-screen-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #050608;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid #1E2028;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#camera-video, #camera-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+#camera-overlay-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Cyber Reticle HUD corners */
+.reticle-bracket {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-color: #00E5FF;
+  pointer-events: none;
+  z-index: 6;
+}
+.reticle-bracket.tl { top: 12px; left: 12px; border-top: 3px solid #00E5FF; border-left: 3px solid #00E5FF; }
+.reticle-bracket.tr { top: 12px; right: 12px; border-top: 3px solid #00E5FF; border-right: 3px solid #00E5FF; }
+.reticle-bracket.bl { bottom: 12px; left: 12px; border-bottom: 3px solid #00E5FF; border-left: 3px solid #00E5FF; }
+.reticle-bracket.br { bottom: 12px; right: 12px; border-bottom: 3px solid #00E5FF; border-right: 3px solid #00E5FF; }
+
+/* Animated laser sweep line */
+.camera-laser-sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.95), transparent);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.8), 0 0 30px rgba(0, 229, 255, 0.4);
+  top: 0;
+  z-index: 7;
+  opacity: 0;
+  pointer-events: none;
+}
+.camera-laser-sweep.active {
+  opacity: 1;
+  animation: laserScan 2.4s ease-in-out infinite;
+}
+@keyframes laserScan {
+  0% { top: 3%; opacity: 0.9; }
+  50% { top: 96%; opacity: 1; }
+  100% { top: 3%; opacity: 0.9; }
+}
+
+.camera-watermark-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.5px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 8;
+  pointer-events: none;
+}
+
+.camera-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.sample-materials-bar {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.sample-bar-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8C8E99;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sample-pills-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .sample-pills-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+.sample-pill-btn {
+  background: #181A20;
+  border: 1px solid #2B2E38;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #E2E2E6;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sample-pill-btn:hover {
+  background: #252832;
+  border-color: #00E5FF;
+  transform: translateY(-1px);
+}
+.sample-pill-btn.active {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: #00E5FF;
+  color: #FFF;
+}
+.sample-pill-tag {
+  font-size: 9px;
+  font-family: var(--mono);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* ─── Damage Telemetry Card Styles ─────────────────────────── */
+.telemetry-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.damage-kpi-banner {
+  background: #131417;
+  color: #FFF;
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #2A2B2F;
+}
+
+.accuracy-big-circle {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 4px solid #00E5FF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
+  background: rgba(0, 229, 255, 0.05);
+}
+.accuracy-val {
+  font-size: 20px;
+  font-weight: 800;
+  font-family: var(--mono);
+  color: #00E5FF;
+  line-height: 1;
+}
+.accuracy-lbl {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: #9C9A93;
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+}
+
+.damage-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.damage-stat-box {
+  background: var(--bg-beige);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.damage-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+.damage-stat-val {
+  font-size: 18px;
+  font-weight: 800;
+  font-family: var(--mono);
+  color: var(--text-dark);
+  margin-top: 4px;
+}
+
+.defect-bars-box {
+  background: var(--bg-beige);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 20px;
+}
+.defect-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.defect-bar-name {
+  width: 95px;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 11px;
+}
+.defect-bar-track {
+  flex: 1;
+  height: 7px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.defect-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+.defect-bar-pct {
+  width: 44px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+
+.live-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 166, 35, 0.15);
+  color: #B46200;
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+.live-nav-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  animation: hudPulse 1.2s infinite;
+}
 </style>
 </head>
 <body>
@@ -1336,6 +1689,9 @@ tr:hover td { background: var(--bg-beige-light); }
     <!-- Center Nav Pills -->
     <nav class="nav-menu">
       <button class="nav-item active" onclick="navigate('overview')" id="nav-overview">Overview</button>
+      <button class="nav-item" onclick="navigate('camera')" id="nav-camera">
+        <span class="live-nav-badge"><span class="dot"></span> Live Camera</span>
+      </button>
       <button class="nav-item" onclick="navigate('inspect')" id="nav-inspect">New Inspection</button>
       <button class="nav-item" onclick="navigate('history')" id="nav-history">History</button>
       <button class="nav-item" onclick="navigate('analytics')" id="nav-analytics">Analytics</button>
@@ -1349,9 +1705,9 @@ tr:hover td { background: var(--bg-beige-light); }
         <div class="status-dot amber"></div>
         <span style="font-size:12px">Checking…</span>
       </div>
-      <button class="btn btn-amber" onclick="navigate('inspect')">
-        <span>New Inspection</span>
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+      <button class="btn btn-amber" onclick="navigate('camera')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Open Camera</span>
       </button>
       <button class="mobile-menu-btn" onclick="toggleMobileNav()" aria-label="Toggle menu">
         <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -1364,6 +1720,9 @@ tr:hover td { background: var(--bg-beige-light); }
 <div id="mobile-drawer" style="display:none;background:var(--bg-beige);border-bottom:1px solid var(--border-light);padding:14px 24px">
   <div style="display:flex;flex-direction:column;gap:6px">
     <button class="nav-item" onclick="navigate('overview');toggleMobileNav()">Overview</button>
+    <button class="nav-item" onclick="navigate('camera');toggleMobileNav()">
+      <span class="live-nav-badge"><span class="dot"></span> AI Defect Camera</span>
+    </button>
     <button class="nav-item" onclick="navigate('inspect');toggleMobileNav()">New Inspection</button>
     <button class="nav-item" onclick="navigate('history');toggleMobileNav()">History</button>
     <button class="nav-item" onclick="navigate('analytics');toggleMobileNav()">Analytics</button>
@@ -1390,9 +1749,12 @@ tr:hover td { background: var(--bg-beige-light); }
             <p class="hero-sub">Deep learning quality inspection engine with real-time CNN classification, spatial Grad-CAM localization, and audit analytics for manufacturing steel and metal sheets.</p>
           </div>
           <div class="hero-cta-group">
-            <button class="btn btn-amber" onclick="navigate('inspect')">
-              <span>Scan Surface Image</span>
-              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+            <button class="btn btn-amber" onclick="navigate('camera')">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>Scan with Camera</span>
+            </button>
+            <button class="btn btn-outline" onclick="navigate('inspect')">
+              <span>Upload Image</span>
             </button>
             <button class="btn btn-outline" onclick="navigate('history')">
               <span>Browse History</span>
@@ -1691,13 +2053,228 @@ tr:hover td { background: var(--bg-beige-light); }
     </div>
 
     <!-- ════════════════════════════════════════════════
-         SECTION 2: NEW INSPECTION STUDIO
+         SECTION 2: AI DEFECT CAMERA SCANNER
+    ════════════════════════════════════════════════════ -->
+    <div class="section" id="section-camera">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="pill-tag amber">Live Vision Intelligence</div>
+          <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin:10px 0 4px">AI Defect Camera & Damage Accuracy Scanner</h2>
+          <p style="font-size:14px;color:var(--text-muted)">Real-time camera feed defect localization with bounding box overlays, damage area estimation, and confidence telemetry.</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-outline btn-sm" onclick="navigate('inspect')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Switch to File Upload
+          </button>
+        </div>
+      </div>
+
+      <div class="camera-layout-grid">
+        <!-- Left: Industrial Cyber HUD Camera Viewport -->
+        <div class="camera-viewport-card">
+          <div class="camera-header-hud">
+            <div class="camera-hud-title">
+              <div class="hud-pulse-dot" id="cam-hud-dot"></div>
+              <span>AI DEFECT DETECTOR</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:11px;color:#A0A4B4">
+              <span id="cam-telemetry-fps">FPS: --</span>
+              <span style="color:#424656">|</span>
+              <span id="cam-telemetry-res">224×224</span>
+              <span style="color:#424656">|</span>
+              <span id="cam-telemetry-status" style="color:#00E5FF">IDLE</span>
+            </div>
+          </div>
+
+          <!-- Video Viewport with Reticle Brackets -->
+          <div class="camera-screen-wrap" id="camera-screen-wrap">
+            <video id="camera-video" playsinline autoplay muted style="display:none"></video>
+            <img id="camera-preview-img" src="" alt="Camera Feed Viewport" style="display:none" />
+            <canvas id="camera-overlay-canvas"></canvas>
+
+            <!-- Cyan Reticle Corner Brackets -->
+            <div class="reticle-bracket tl"></div>
+            <div class="reticle-bracket tr"></div>
+            <div class="reticle-bracket bl"></div>
+            <div class="reticle-bracket br"></div>
+
+            <!-- Laser Scan Line -->
+            <div class="camera-laser-sweep" id="camera-laser-sweep"></div>
+
+            <!-- Overlay Watermark & Feed Info -->
+            <div class="camera-watermark-overlay" id="cam-watermark">
+              FEED: <span id="cam-feed-name">STANDBY</span>
+            </div>
+
+            <!-- Standby Placeholder / Empty State -->
+            <div id="camera-empty-state" style="text-align:center;padding:40px 20px;color:#8F93A3;z-index:4">
+              <div style="width:68px;height:68px;border-radius:50%;background:#181A22;border:1px solid #2B2E3C;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#00E5FF">
+                <svg width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <div style="font-size:16px;font-weight:700;color:#FFF;margin-bottom:6px">Optical Sensor Disconnected</div>
+              <p style="font-size:12px;color:#7A7E8D;max-width:320px;margin:0 auto 16px">Click "Start Camera" to access live device video, or select a test material below to simulate an active product scan.</p>
+              <div style="display:flex;gap:10px;justify-content:center">
+                <button class="btn btn-amber btn-sm" onclick="startCamera()">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Start Camera
+                </button>
+                <button class="btn btn-outline btn-sm" style="color:#FFF;border-color:#383B47" onclick="loadSampleSurface('tile')">
+                  Load Test Tile
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Camera Controls Toolbar -->
+          <div class="camera-controls-row">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-amber btn-sm" id="btn-toggle-cam" onclick="toggleCamera()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span id="btn-cam-label">Start Camera</span>
+              </button>
+
+              <button class="btn btn-outline btn-sm" id="btn-toggle-live" onclick="toggleContinuousScan()" style="color:#FFF;border-color:#333644">
+                <span class="dot" style="width:7px;height:7px;border-radius:50%;background:#F5A623;display:inline-block"></span>
+                <span id="btn-live-label">Live Scan: ON</span>
+              </button>
+
+              <button class="btn btn-outline btn-sm" onclick="captureSnapshot()" id="btn-snapshot" style="color:#FFF;border-color:#333644" title="Capture high-resolution audit snapshot">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                Snapshot & Audit
+              </button>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px">
+              <select id="camera-device-select" onchange="changeCameraDevice(this.value)" style="background:#181A22;color:#C6C8D2;border:1px solid #2B2E3C;border-radius:6px;padding:6px 10px;font-size:12px;outline:none">
+                <option value="user">Front / User Cam</option>
+                <option value="environment" selected>Back / Macro Cam</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Test Material Selector (Matches User's reference picture!) -->
+          <div class="sample-materials-bar">
+            <div class="sample-bar-label">
+              <span>Benchmark Product Surfaces (Click to Scan):</span>
+              <span style="color:#00E5FF;font-family:var(--mono);font-size:10px">REF: AI DEFECT DETECTOR</span>
+            </div>
+            <div class="sample-pills-row">
+              <button class="sample-pill-btn" onclick="loadSampleSurface('tile')" id="sample-btn-tile">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span>Tile</span>
+                  <span class="sample-pill-tag" style="color:#00E5FF">Crack</span>
+                </div>
+                <div style="font-size:10px;color:#787B8A">Ceramic floor tile</div>
+              </button>
+              <button class="sample-pill-btn" onclick="loadSampleSurface('fabric')" id="sample-btn-fabric">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span>Fabric</span>
+                  <span class="sample-pill-tag" style="color:#FF9100">Stain</span>
+                </div>
+                <div style="font-size:10px;color:#787B8A">Woven fabric sheet</div>
+              </button>
+              <button class="sample-pill-btn" onclick="loadSampleSurface('plastic')" id="sample-btn-plastic">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span>Plastic part</span>
+                  <span class="sample-pill-tag" style="color:#FF1744">Speck</span>
+                </div>
+                <div style="font-size:10px;color:#787B8A">Molded resin shell</div>
+              </button>
+              <button class="sample-pill-btn" onclick="loadSampleSurface('painted')" id="sample-btn-painted">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span>Painted panel</span>
+                  <span class="sample-pill-tag" style="color:#2979FF">Scratch</span>
+                </div>
+                <div style="font-size:10px;color:#787B8A">Automotive coat</div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Real-time Damage Accuracy & Telemetry Panel -->
+        <div class="telemetry-card">
+          <!-- Top Telemetry Banner -->
+          <div class="damage-kpi-banner" id="telemetry-banner">
+            <div>
+              <div class="pill-tag soft" id="telemetry-status-pill" style="color:#00E5FF;border-color:rgba(0,229,255,0.4)">Awaiting Scan</div>
+              <div style="font-size:20px;font-weight:800;color:#FFF;margin-top:10px" id="telemetry-defect-name">—</div>
+              <div style="font-size:12px;color:#9C9A93;margin-top:3px" id="telemetry-defect-desc">Point camera at product surface</div>
+            </div>
+            <div class="accuracy-big-circle" id="telemetry-accuracy-circle">
+              <div class="accuracy-val" id="telemetry-accuracy-val">0%</div>
+              <div class="accuracy-lbl">Accuracy</div>
+            </div>
+          </div>
+
+          <!-- Damage Metrics Grid -->
+          <div class="damage-stats-grid">
+            <div class="damage-stat-box">
+              <div class="damage-stat-label">Damage Accuracy</div>
+              <div class="damage-stat-val" id="t-stat-accuracy" style="color:#00E5FF">—</div>
+            </div>
+            <div class="damage-stat-box">
+              <div class="damage-stat-label">Damage Severity</div>
+              <div class="damage-stat-val" id="t-stat-severity">—</div>
+            </div>
+            <div class="damage-stat-box">
+              <div class="damage-stat-label">Damaged Surface Area</div>
+              <div class="damage-stat-val" id="t-stat-area">—</div>
+            </div>
+            <div class="damage-stat-box">
+              <div class="damage-stat-label">Detection Latency</div>
+              <div class="damage-stat-val" id="t-stat-latency" style="color:var(--text-muted)">—</div>
+            </div>
+          </div>
+
+          <!-- Class Probabilities Breakdown -->
+          <div class="defect-bars-box">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">
+              Defect Classification Spectrum
+            </div>
+            <div id="telemetry-bars-list">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+
+          <!-- Snapshot Grad-CAM Preview (shown after capture) -->
+          <div id="telemetry-gradcam-box" style="display:none;margin-bottom:18px">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Spatial Grad-CAM Gradient Localization
+            </div>
+            <img id="telemetry-gradcam-img" src="" alt="Grad-CAM Activation" style="width:100%;height:auto;border-radius:8px;border:1px solid var(--border-light)" />
+          </div>
+
+          <!-- Telemetry Actions -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-amber btn-sm" onclick="saveCurrentTelemetryToHistory()" id="btn-save-telemetry" disabled>
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save to Inspection History
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="downloadCameraAuditJson()">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download Audit JSON
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════
+         SECTION 3: NEW INSPECTION STUDIO
     ════════════════════════════════════════════════════ -->
     <div class="section" id="section-inspect">
-      <div style="margin-bottom:24px">
-        <div class="pill-tag amber">Neural Scanner</div>
-        <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin:10px 0 4px">Surface Defect Inspection Studio</h2>
-        <p style="font-size:14px;color:var(--text-muted)">Upload high-resolution metal surface photographs to run real-time defect classification & Grad-CAM spatial analysis.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
+        <div>
+          <div class="pill-tag amber">Neural Scanner</div>
+          <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin:10px 0 4px">Surface Defect Inspection Studio</h2>
+          <p style="font-size:14px;color:var(--text-muted)">Upload high-resolution metal surface photographs to run real-time defect classification & Grad-CAM spatial analysis.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="navigate('camera')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Switch to Live Camera Scanner</span>
+        </button>
       </div>
 
       <div class="inspection-grid">
@@ -1731,6 +2308,7 @@ tr:hover td { background: var(--bg-beige-light); }
 
             <div class="preview-img-wrap" id="preview-img-wrap">
               <img id="preview-img" src="" alt="Selected Surface Preview" />
+              <canvas id="inspect-bbox-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3"></canvas>
               <div class="scan-overlay" id="scan-overlay">
                 <div class="scan-line"></div>
                 <div class="scan-spinner"></div>
@@ -1785,6 +2363,20 @@ tr:hover td { background: var(--bg-beige-light); }
                       <span id="ri-conf-pct" style="font-weight:700;font-family:var(--mono);color:var(--text-dark)">—</span>
                     </div>
                     <div class="confidence-track"><div class="confidence-fill" id="ri-conf-bar" style="width:0%"></div></div>
+                  </div>
+                </div>
+
+                <div class="result-info-block">
+                  <div class="result-info-label">Damage Telemetry & Severity</div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                    <span class="result-info-value" id="ri-accuracy" style="color:#00E5FF;font-size:18px">—</span>
+                    <span class="badge" id="ri-severity-badge">Minor</span>
+                  </div>
+                  <div style="margin-top:12px">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted)">
+                      <span>Damaged Area</span>
+                      <span id="ri-damage-area" style="font-weight:700;font-family:var(--mono);color:var(--text-dark)">—</span>
+                    </div>
                   </div>
                 </div>
 
@@ -2234,6 +2826,7 @@ const CLASS_COLORS = {
 
 const PAGE_TITLES = {
   overview:    'Overview',
+  camera:      'AI Defect Camera Scanner',
   inspect:     'New Inspection',
   history:     'Inspection History',
   analytics:   'Analytics',
@@ -2255,6 +2848,7 @@ function navigate(section) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (section === 'overview')    loadOverview();
+  if (section === 'camera')      initCameraScanner();
   if (section === 'history')     loadHistory(1);
   if (section === 'analytics')   initAnalytics();
   if (section === 'model-info')  loadModelInfo();
@@ -2488,6 +3082,11 @@ function resetUpload() {
   document.getElementById('result-panel').style.display = 'none';
   document.getElementById('result-empty').style.display = 'block';
   document.getElementById('gradcam-section').style.display = 'none';
+  const cvs = document.getElementById('inspect-bbox-canvas');
+  if (cvs) {
+    const ctx = cvs.getContext('2d');
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+  }
 }
 
 async function runScan() {
@@ -2538,7 +3137,7 @@ function renderResult(data) {
   document.getElementById('result-class').textContent = data.predicted_class;
   document.getElementById('result-meta').textContent = `Inspection Record #${data.inspection_id} · ${fmtDate(data.timestamp)}`;
   document.getElementById('result-badge').className = 'badge badge-red';
-  document.getElementById('result-badge').textContent = 'DEFECT DETECTED';
+  document.getElementById('result-badge').textContent = data.defect_status || 'DEFECT DETECTED';
 
   document.getElementById('ri-class').textContent = data.predicted_class;
   document.getElementById('ri-conf-pct').textContent = fmtPct(data.confidence);
@@ -2547,6 +3146,20 @@ function renderResult(data) {
   document.getElementById('ri-date').textContent = fmtDate(data.timestamp);
   document.getElementById('ri-filename').textContent = data.filename;
   document.getElementById('ri-model').textContent = data.model_version;
+
+  // Damage Accuracy & Severity
+  const accPct = data.accuracy_percent != null ? data.accuracy_percent + '%' : fmtPct(data.confidence);
+  document.getElementById('ri-accuracy').textContent = accPct;
+  const sevEl = document.getElementById('ri-severity-badge');
+  const sev = data.damage_severity || 'Minor';
+  sevEl.textContent = sev;
+  sevEl.className = 'badge ' + (sev === 'Critical' ? 'badge-red' : (sev === 'Moderate' ? 'badge-amber' : 'badge-green'));
+  document.getElementById('ri-damage-area').textContent = (data.damage_percentage != null ? data.damage_percentage.toFixed(1) : '0.0') + '% surface';
+
+  // Draw bounding boxes on preview image
+  if (data.defect_boxes && data.defect_boxes.length > 0) {
+    setTimeout(() => drawInspectBBoxes(data.defect_boxes), 100);
+  }
 
   // Top 3
   const top3 = document.getElementById('top3-list');
@@ -2915,6 +3528,525 @@ async function loadModelInfo() {
   } catch(e) {
     el.innerHTML = `<div style="color:#EF4444">${escHtml(e.message)}</div>`;
   }
+}
+
+/* ══════════════════════════════════════════════════
+   AI DEFECT CAMERA SCANNER ENGINE
+══════════════════════════════════════════════════ */
+let cameraStream = null;
+let cameraActive = false;
+let continuousScanActive = true;
+let scanFrameInterval = null;
+let currentFacingMode = 'environment';
+let latestCameraTelemetry = null;
+let cameraSamplesCache = [];
+let activeSampleId = null;
+let hudAnimId = null;
+let lastScanTimestamp = 0;
+let scanFpsCount = 0;
+let lastFpsUpdateTime = 0;
+
+async function initCameraScanner() {
+  const canvas = document.getElementById('camera-overlay-canvas');
+  if (canvas) {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width || 640;
+    canvas.height = rect.height || 480;
+  }
+
+  // Load sample surfaces if not cached
+  if (cameraSamplesCache.length === 0) {
+    try {
+      cameraSamplesCache = await api('/api/camera/samples');
+    } catch (e) {
+      console.warn('Failed to load sample surfaces:', e);
+    }
+  }
+
+  startHudLoop();
+  
+  // If camera not yet started and no sample loaded, auto load first sample
+  if (!cameraActive && !activeSampleId && cameraSamplesCache.length > 0) {
+    loadSampleSurface('tile');
+  }
+}
+
+function startHudLoop() {
+  if (hudAnimId) cancelAnimationFrame(hudAnimId);
+  function render() {
+    drawCameraHUD();
+    hudAnimId = requestAnimationFrame(render);
+  }
+  hudAnimId = requestAnimationFrame(render);
+}
+
+async function startCamera() {
+  try {
+    if (cameraStream) stopCamera();
+    activeSampleId = null;
+    document.querySelectorAll('.sample-pill-btn').forEach(b => b.classList.remove('active'));
+
+    const constraints = {
+      video: {
+        facingMode: currentFacingMode,
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    };
+
+    cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+    const video = document.getElementById('camera-video');
+    const previewImg = document.getElementById('camera-preview-img');
+    const emptyState = document.getElementById('camera-empty-state');
+    const laser = document.getElementById('camera-laser-sweep');
+    const feedName = document.getElementById('cam-feed-name');
+
+    video.srcObject = cameraStream;
+    video.style.display = 'block';
+    previewImg.style.display = 'none';
+    emptyState.style.display = 'none';
+    laser.classList.add('active');
+    feedName.textContent = 'OPTICAL SENSOR (LIVE CAM)';
+
+    await video.play();
+
+    cameraActive = true;
+    updateCamButtonState(true);
+    document.getElementById('cam-telemetry-status').textContent = 'STREAMING';
+    document.getElementById('cam-hud-dot').className = 'hud-pulse-dot scanning';
+
+    notify('Optical camera sensor online. Real-time scanning initiated.', 'success');
+
+    startContinuousScanner();
+
+  } catch (err) {
+    console.warn('Camera access denied or unavailable:', err);
+    notify(`Camera access notice: ${err.message}. Loading simulated test surfaces.`, 'info');
+    loadSampleSurface('tile');
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+  cameraActive = false;
+  const video = document.getElementById('camera-video');
+  if (video) video.style.display = 'none';
+  updateCamButtonState(false);
+  document.getElementById('cam-telemetry-status').textContent = 'STANDBY';
+  document.getElementById('cam-hud-dot').className = 'hud-pulse-dot';
+  document.getElementById('camera-laser-sweep').classList.remove('active');
+  if (!activeSampleId) {
+    document.getElementById('camera-empty-state').style.display = 'block';
+    document.getElementById('cam-feed-name').textContent = 'STANDBY';
+  }
+}
+
+function toggleCamera() {
+  if (cameraActive) {
+    stopCamera();
+    notify('Camera sensor deactivated.', 'info');
+  } else {
+    startCamera();
+  }
+}
+
+function updateCamButtonState(active) {
+  const btn = document.getElementById('btn-toggle-cam');
+  const lbl = document.getElementById('btn-cam-label');
+  if (active) {
+    btn.className = 'btn btn-outline btn-sm';
+    btn.style.color = '#EF4444';
+    btn.style.borderColor = '#EF4444';
+    lbl.textContent = 'Stop Camera';
+  } else {
+    btn.className = 'btn btn-amber btn-sm';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+    lbl.textContent = 'Start Camera';
+  }
+}
+
+function toggleContinuousScan() {
+  continuousScanActive = !continuousScanActive;
+  const btn = document.getElementById('btn-toggle-live');
+  const lbl = document.getElementById('btn-live-label');
+  const dot = btn.querySelector('.dot');
+  if (continuousScanActive) {
+    lbl.textContent = 'Live Scan: ON';
+    dot.style.background = '#10B981';
+    startContinuousScanner();
+    notify('Live defect telemetry scanner resumed.', 'info');
+  } else {
+    lbl.textContent = 'Live Scan: PAUSED';
+    dot.style.background = '#8C8E99';
+    stopContinuousScanner();
+    notify('Continuous scanning paused. You can still trigger snapshots.', 'info');
+  }
+}
+
+function startContinuousScanner() {
+  stopContinuousScanner();
+  if (!continuousScanActive) return;
+  scanFrameInterval = setInterval(scanCurrentFrame, 650);
+}
+
+function stopContinuousScanner() {
+  if (scanFrameInterval) {
+    clearInterval(scanFrameInterval);
+    scanFrameInterval = null;
+  }
+}
+
+async function changeCameraDevice(mode) {
+  currentFacingMode = mode;
+  if (cameraActive) {
+    await startCamera();
+  }
+}
+
+async function loadSampleSurface(sampleId) {
+  if (cameraActive) stopCamera();
+  activeSampleId = sampleId;
+
+  document.querySelectorAll('.sample-pill-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('sample-btn-' + sampleId);
+  if (btn) btn.classList.add('active');
+
+  let sample = cameraSamplesCache.find(s => s.id === sampleId);
+  if (!sample) {
+    try {
+      cameraSamplesCache = await api('/api/camera/samples');
+      sample = cameraSamplesCache.find(s => s.id === sampleId);
+    } catch(e) {}
+  }
+  if (!sample) return;
+
+  const video = document.getElementById('camera-video');
+  const previewImg = document.getElementById('camera-preview-img');
+  const emptyState = document.getElementById('camera-empty-state');
+  const laser = document.getElementById('camera-laser-sweep');
+  const feedName = document.getElementById('cam-feed-name');
+
+  video.style.display = 'none';
+  previewImg.src = sample.data_uri;
+  previewImg.style.display = 'block';
+  emptyState.style.display = 'none';
+  laser.classList.add('active');
+  feedName.textContent = `BENCHMARK SAMPLE: ${sample.name.toUpperCase()} (${sample.expected.toUpperCase()})`;
+
+  document.getElementById('cam-telemetry-status').textContent = 'BENCHMARK RUN';
+  document.getElementById('cam-hud-dot').className = 'hud-pulse-dot scanning';
+
+  await scanCurrentFrame();
+  startContinuousScanner();
+}
+
+async function scanCurrentFrame() {
+  if (!continuousScanActive) return;
+
+  let frameDataUri = null;
+  if (cameraActive) {
+    const video = document.getElementById('camera-video');
+    if (video.readyState >= 2 && video.videoWidth > 0) {
+      const offscreen = document.createElement('canvas');
+      offscreen.width = 224;
+      offscreen.height = 224;
+      const ctx = offscreen.getContext('2d');
+      ctx.drawImage(video, 0, 0, 224, 224);
+      frameDataUri = offscreen.toDataURL('image/jpeg', 0.85);
+    }
+  } else if (activeSampleId) {
+    const sample = cameraSamplesCache.find(s => s.id === activeSampleId);
+    if (sample) frameDataUri = sample.data_uri;
+  }
+
+  if (!frameDataUri) return;
+
+  const t0 = performance.now();
+  try {
+    const res = await fetch('/api/camera/scan-frame', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: frameDataUri }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const latency = Math.round(performance.now() - t0);
+
+    latestCameraTelemetry = data;
+    latestCameraTelemetry.latency = latency;
+    latestCameraTelemetry.frameDataUri = frameDataUri;
+
+    updateTelemetryHUD(data, latency);
+    updateScanFps();
+
+  } catch (err) {
+    console.debug('Scan frame skip:', err);
+  }
+}
+
+function updateScanFps() {
+  const now = performance.now();
+  scanFpsCount++;
+  if (now - lastFpsUpdateTime >= 1000) {
+    document.getElementById('cam-telemetry-fps').textContent = `FPS: ${scanFpsCount}`;
+    scanFpsCount = 0;
+    lastFpsUpdateTime = now;
+  }
+}
+
+function updateTelemetryHUD(data, latency) {
+  const defectNameEl = document.getElementById('telemetry-defect-name');
+  const defectDescEl = document.getElementById('telemetry-defect-desc');
+  const statusPill = document.getElementById('telemetry-status-pill');
+  const accValEl = document.getElementById('telemetry-accuracy-val');
+  const dot = document.getElementById('cam-hud-dot');
+
+  const accuracy = (data.accuracy_percent || (data.confidence * 100)).toFixed(1);
+  accValEl.textContent = accuracy + '%';
+
+  if (data.defect_status === 'DEFECT DETECTED') {
+    defectNameEl.textContent = `${data.defect_label || data.predicted_class} Defect`;
+    defectNameEl.style.color = data.defect_color || '#00E5FF';
+    defectDescEl.textContent = data.defect_description || 'Surface abnormality localized';
+    statusPill.textContent = 'DEFECT DETECTED';
+    statusPill.className = 'pill-tag amber';
+    statusPill.style.color = '#121316';
+    statusPill.style.background = data.defect_color || '#00E5FF';
+    statusPill.style.borderColor = data.defect_color || '#00E5FF';
+    dot.className = 'hud-pulse-dot defect';
+  } else {
+    defectNameEl.textContent = 'Surface Clear';
+    defectNameEl.style.color = '#10B981';
+    defectDescEl.textContent = 'No critical surface flaws localized';
+    statusPill.textContent = 'SURFACE PASS';
+    statusPill.className = 'pill-tag soft';
+    statusPill.style.color = '#10B981';
+    statusPill.style.background = 'rgba(16,185,129,0.12)';
+    statusPill.style.borderColor = '#10B981';
+    dot.className = 'hud-pulse-dot scanning';
+  }
+
+  document.getElementById('t-stat-accuracy').textContent = accuracy + '%';
+  document.getElementById('t-stat-accuracy').style.color = data.defect_color || '#00E5FF';
+
+  const sevEl = document.getElementById('t-stat-severity');
+  sevEl.textContent = data.damage_severity || 'Minor';
+  sevEl.style.color = data.damage_severity === 'Critical' ? '#EF4444' : (data.damage_severity === 'Moderate' ? '#F5A623' : '#10B981');
+
+  document.getElementById('t-stat-area').textContent = (data.damage_percentage != null ? data.damage_percentage.toFixed(1) : '0.0') + '%';
+  document.getElementById('t-stat-latency').textContent = `${latency || 0} ms`;
+
+  const barsEl = document.getElementById('telemetry-bars-list');
+  const probs = data.class_probabilities || {};
+  const entries = Object.entries(probs).sort((a,b) => b[1] - a[1]);
+
+  barsEl.innerHTML = entries.map(([cls, prob]) => {
+    const pct = (prob * 100).toFixed(1);
+    const color = CLASS_COLORS[cls] || '#F5A623';
+    return `
+      <div class="defect-bar-row">
+        <span class="defect-bar-name">${escHtml(cls)}</span>
+        <div class="defect-bar-track">
+          <div class="defect-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <span class="defect-bar-pct" style="color:${color}">${pct}%</span>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('btn-save-telemetry').disabled = false;
+}
+
+function drawCameraHUD() {
+  const canvas = document.getElementById('camera-overlay-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (!latestCameraTelemetry) return;
+
+  const boxes = latestCameraTelemetry.defect_boxes || [];
+  const primaryColor = latestCameraTelemetry.defect_color || '#00E5FF';
+
+  boxes.forEach(box => {
+    const bx = box.x * w;
+    const by = box.y * h;
+    const bw = box.w * w;
+    const bh = box.h * h;
+    const boxColor = box.color || primaryColor;
+
+    ctx.fillStyle = hexToRgba(boxColor, 0.12);
+    ctx.fillRect(bx, by, bw, bh);
+
+    ctx.strokeStyle = boxColor;
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(bx, by, bw, bh);
+
+    const cLen = Math.min(14, bw / 3, bh / 3);
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.moveTo(bx, by + cLen); ctx.lineTo(bx, by); ctx.lineTo(bx + cLen, by); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx + bw - cLen, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + cLen); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx, by + bh - cLen); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + cLen, by + bh); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx + bw - cLen, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - cLen); ctx.stroke();
+
+    const labelText = ` ${box.label} ${box.accuracy}% `;
+    ctx.font = 'bold 12px "JetBrains Mono", monospace';
+    const textW = ctx.measureText(labelText).width;
+    const badgeH = 20;
+    const badgeY = Math.max(2, by - badgeH - 3);
+
+    ctx.fillStyle = boxColor;
+    ctx.fillRect(bx, badgeY, textW + 10, badgeH);
+
+    ctx.fillStyle = '#121316';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(labelText, bx + 5, badgeY + badgeH / 2);
+  });
+}
+
+function hexToRgba(hex, alpha) {
+  let c;
+  if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+    c = hex.substring(1).split('');
+    if (c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+    c = '0x' + c.join('');
+    return `rgba(${[(c>>16)&255, (c>>8)&255, c&255].join(',')},${alpha})`;
+  }
+  return `rgba(0,229,255,${alpha})`;
+}
+
+async function captureSnapshot() {
+  let frameDataUri = null;
+  if (cameraActive) {
+    const video = document.getElementById('camera-video');
+    if (video.readyState >= 2 && video.videoWidth > 0) {
+      const offscreen = document.createElement('canvas');
+      offscreen.width = video.videoWidth || 640;
+      offscreen.height = video.videoHeight || 480;
+      const ctx = offscreen.getContext('2d');
+      ctx.drawImage(video, 0, 0, offscreen.width, offscreen.height);
+      frameDataUri = offscreen.toDataURL('image/jpeg', 0.92);
+    }
+  } else if (activeSampleId) {
+    const sample = cameraSamplesCache.find(s => s.id === activeSampleId);
+    if (sample) frameDataUri = sample.data_uri;
+  }
+
+  if (!frameDataUri) {
+    notify('No active video or sample surface to capture.', 'error');
+    return;
+  }
+
+  const wrap = document.getElementById('camera-screen-wrap');
+  wrap.style.transition = 'none';
+  wrap.style.filter = 'brightness(2.2)';
+  setTimeout(() => {
+    wrap.style.transition = 'filter 0.3s ease';
+    wrap.style.filter = 'brightness(1)';
+  }, 100);
+
+  const btn = document.getElementById('btn-snapshot');
+  btn.disabled = true;
+  btn.textContent = 'Auditing…';
+
+  try {
+    const res = await fetch('/api/camera/snapshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: frameDataUri,
+        surface_name: activeSampleId ? `Sample_${activeSampleId}` : 'Camera_Live_Audit'
+      }),
+    });
+    if (!res.ok) throw new Error(`Snapshot audit failed (${res.status})`);
+    const data = await res.json();
+
+    latestCameraTelemetry = data;
+    updateTelemetryHUD(data, 120);
+
+    if (data.gradcam) {
+      const gBox = document.getElementById('telemetry-gradcam-box');
+      const gImg = document.getElementById('telemetry-gradcam-img');
+      gImg.src = 'data:image/jpeg;base64,' + data.gradcam;
+      gBox.style.display = 'block';
+    }
+
+    notify(`Snapshot Audit #${data.inspection_id} logged: ${data.predicted_class} (${data.accuracy_percent}%)`, 'success');
+
+  } catch (err) {
+    notify('Snapshot capture error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Snapshot & Audit`;
+  }
+}
+
+async function saveCurrentTelemetryToHistory() {
+  if (!latestCameraTelemetry) return;
+  if (latestCameraTelemetry.inspection_id) {
+    notify(`Record already saved as Inspection #${latestCameraTelemetry.inspection_id}`, 'info');
+    return;
+  }
+  await captureSnapshot();
+}
+
+function downloadCameraAuditJson() {
+  if (!latestCameraTelemetry) {
+    notify('No telemetry data available to export.', 'info');
+    return;
+  }
+  const blob = new Blob([JSON.stringify(latestCameraTelemetry, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `camera_surface_scan_${Date.now()}.json`;
+  a.click();
+}
+
+function drawInspectBBoxes(boxes) {
+  const canvas = document.getElementById('inspect-bbox-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('preview-img-wrap');
+  canvas.width = wrap.clientWidth || 300;
+  canvas.height = wrap.clientHeight || 300;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  boxes.forEach(b => {
+    const x = b.x * canvas.width;
+    const y = b.y * canvas.height;
+    const w = b.w * canvas.width;
+    const h = b.h * canvas.height;
+    const color = b.color || '#00E5FF';
+
+    ctx.fillStyle = hexToRgba(color, 0.15);
+    ctx.fillRect(x, y, w, h);
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(x, y, w, h);
+
+    const txt = ` ${b.label} ${b.accuracy}% `;
+    ctx.font = 'bold 12px "JetBrains Mono", monospace';
+    const tw = ctx.measureText(txt).width;
+    const badgeH = 20;
+    const badgeY = Math.max(2, y - badgeH - 2);
+
+    ctx.fillStyle = color;
+    ctx.fillRect(x, badgeY, tw + 8, badgeH);
+
+    ctx.fillStyle = '#121316';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(txt, x + 4, badgeY + badgeH / 2);
+  });
 }
 
 /* ══════════════════════════════════════════════════

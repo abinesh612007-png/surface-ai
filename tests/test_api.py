@@ -122,3 +122,28 @@ def test_delete_nonexistent(client):
 def test_history_item_not_found(client):
     r = client.get("/api/history/99999")
     assert r.status_code == 404
+
+
+# ── Camera endpoints ──────────────────────────────────────────────────────────
+def test_camera_samples(client):
+    r = client.get("/api/camera/samples")
+    assert r.status_code == 200
+    samples = r.get_json()
+    assert len(samples) == 4
+    for s in samples:
+        assert "name" in s
+        assert "data_uri" in s
+        assert "expected" in s
+
+
+def test_camera_scan_frame(client):
+    # Test valid image scan
+    samples = client.get("/api/camera/samples").get_json()
+    r = client.post("/api/camera/scan-frame", json={"image": samples[0]["data_uri"]})
+    assert r.status_code == 200
+    data = r.get_json()
+    assert "predicted_class" in data
+    assert "accuracy_percent" in data
+    assert "damage_percentage" in data
+    assert "defect_boxes" in data
+

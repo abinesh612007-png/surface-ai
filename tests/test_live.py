@@ -33,8 +33,28 @@ def run_checks():
         print("Inspection response status:", r.status)
         print("Predicted class:", res["predicted_class"])
         print("Confidence:", res["confidence"])
-        print("Top 3:", res["top3"])
+        print("Accuracy %:", res.get("accuracy_percent"))
+        print("Damage %:", res.get("damage_percentage"))
+        print("Defect boxes:", len(res.get("defect_boxes", [])))
         print("Grad-CAM included:", bool(res.get("gradcam")))
+
+    # 3. Camera sample & scan frame
+    with urllib.request.urlopen('http://127.0.0.1:5000/api/camera/samples') as r:
+        samples = json.loads(r.read())
+    print("Camera samples available:", len(samples))
+
+    cam_req = urllib.request.Request(
+        'http://127.0.0.1:5000/api/camera/scan-frame',
+        data=json.dumps({"image": samples[0]["data_uri"]}).encode(),
+        headers={'Content-Type': 'application/json'},
+        method='POST'
+    )
+    with urllib.request.urlopen(cam_req) as r:
+        cam_res = json.loads(r.read())
+        print("Live camera scan status:", r.status)
+        print("Live detected defect:", cam_res["predicted_class"], f"({cam_res.get('defect_label')})")
+        print("Live damage accuracy:", cam_res.get("accuracy_percent"), "%")
+        print("Live defect boxes:", len(cam_res.get("defect_boxes", [])))
 
 if __name__ == '__main__':
     run_checks()

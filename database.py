@@ -32,7 +32,9 @@ def init_db():
                 confidence              REAL    NOT NULL,
                 class_probabilities_json TEXT   NOT NULL,
                 defect_status           TEXT    DEFAULT NULL,
-                model_version           TEXT    NOT NULL DEFAULT 'unknown'
+                model_version           TEXT    NOT NULL DEFAULT 'unknown',
+                damage_percentage       REAL    DEFAULT 0.0,
+                damage_severity         TEXT    DEFAULT 'Minor'
             );
 
             CREATE INDEX IF NOT EXISTS idx_inspections_timestamp
@@ -41,6 +43,16 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_inspections_predicted_class
                 ON inspections (predicted_class);
         """)
+
+        # Backward compatibility column migrations for existing databases
+        for col_name, col_type in [
+            ("damage_percentage", "REAL DEFAULT 0.0"),
+            ("damage_severity", "TEXT DEFAULT 'Minor'")
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE inspections ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
 
 
 # ---------------------------------------------------------------------------
@@ -54,6 +66,8 @@ def save_inspection(
     class_probabilities: dict,
     defect_status: str | None,
     model_version: str,
+    damage_percentage: float = 0.0,
+    damage_severity: str = "Minor",
 ) -> int:
     """Insert a new inspection record and return its id."""
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -62,8 +76,9 @@ def save_inspection(
             """
             INSERT INTO inspections
                 (filename, timestamp_utc, predicted_class, confidence,
-                 class_probabilities_json, defect_status, model_version)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                 class_probabilities_json, defect_status, model_version,
+                 damage_percentage, damage_severity)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 filename,
@@ -73,6 +88,8 @@ def save_inspection(
                 json.dumps(class_probabilities),
                 defect_status,
                 model_version,
+                round(float(damage_percentage), 2),
+                str(damage_severity),
             ),
         )
         return cur.lastrowid
