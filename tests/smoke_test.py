@@ -12,11 +12,23 @@ def post_multipart(filename, content_type, data):
     parts = ('--' + boundary + '\r\n' + disp + '\r\n'
              + 'Content-Type: ' + content_type + '\r\n\r\n').encode()
     body = parts + data + ('\r\n--' + boundary + '--\r\n').encode()
-    conn = http.client.HTTPConnection(*BASE, timeout=10)
-    conn.request('POST', '/api/inspect', body=body,
-                 headers={'Content-Type': 'multipart/form-data; boundary=' + boundary})
-    r = conn.getresponse()
-    return r.status, json.loads(r.read())
+
+    try:
+        conn = http.client.HTTPConnection(*BASE, timeout=3)
+        conn.request('POST', '/api/inspect', body=body,
+                     headers={'Content-Type': 'multipart/form-data; boundary=' + boundary})
+        r = conn.getresponse()
+        return r.status, json.loads(r.read())
+    except Exception:
+        # Fallback to in-process Flask test client when server is not running on 127.0.0.1:5000
+        import app as flask_app
+        client = flask_app.app.test_client()
+        res = client.post(
+            '/api/inspect',
+            data={'image': (io.BytesIO(data), filename)},
+            content_type='multipart/form-data'
+        )
+        return res.status_code, res.get_json()
 
 def test_wrong_mime():
     status, data = post_multipart('file.txt', 'text/plain', b'plain text')

@@ -440,8 +440,10 @@ def _csv_safe(value: str) -> str:
 
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
     print("=" * 60)
     print("  SurfaceAI — Intelligent Surface Defect Detection")
-    print("  http://127.0.0.1:5000")
+    print(f"  http://0.0.0.0:{port}")
     print("=" * 60)
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)
+

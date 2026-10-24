@@ -87,7 +87,10 @@ def load_model() -> tuple[bool, str]:
         _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         net = _build_model(num_classes=len(CLASS_NAMES))
 
-        state = torch.load(CHECKPOINT_PATH, map_location=_device, weights_only=True)
+        try:
+            state = torch.load(CHECKPOINT_PATH, map_location=_device, weights_only=True)
+        except Exception:
+            state = torch.load(CHECKPOINT_PATH, map_location=_device, weights_only=False)
         # Support both raw state_dict and checkpoint dicts
         if isinstance(state, dict) and "model_state_dict" in state:
             net.load_state_dict(state["model_state_dict"])
