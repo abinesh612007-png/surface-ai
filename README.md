@@ -47,7 +47,7 @@ The New Inspection page will show a clear "Model not loaded" message.
 python app.py
 ```
 
-Open **http://127.0.0.1:5000** in your browser.
+Open **https://ai-surface.onrender.com/** in your browser.
 
 ---
 
@@ -189,7 +189,7 @@ This heatmap shows the approximate image regions that influenced the prediction.
 ## Notes for College Presentation
 
 1. Start the server: `python app.py`
-2. Open http://127.0.0.1:5000
+2. Open https://ai-surface.onrender.com/
 3. Navigate to **New Inspection** and upload any steel surface image
 4. The result panel shows the predicted class, confidence, top-3 predictions, and (if model is loaded) a Grad-CAM overlay
 5. All records are stored in `surfaceai.db` and visible in **Inspection History** and **Analytics**
