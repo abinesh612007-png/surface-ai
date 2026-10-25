@@ -54,6 +54,7 @@ TRAIN_TF = transforms.Compose([
     transforms.ColorJitter(brightness=0.3, contrast=0.3),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    transforms.RandomErasing(p=0.25, scale=(0.02, 0.2), value="random"),
 ])
 
 EVAL_TF = transforms.Compose([
@@ -65,13 +66,32 @@ EVAL_TF = transforms.Compose([
 
 
 # ── Model factory ────────────────────────────────────────────────────────────
-def build_model(num_classes: int, pretrained: bool = True) -> nn.Module:
-    weights = models.ResNet18_Weights.IMAGENET1K_V1 if pretrained else None
-    net = models.resnet18(weights=weights)
-    # Freeze backbone initially
-    for p in net.parameters():
-        p.requires_grad = False
-    net.fc = nn.Linear(net.fc.in_features, num_classes)
+def build_model(num_classes: int, arch: str = "resnet18", pretrained: bool = True) -> nn.Module:
+    """Builds deep CNN backbone with customized head."""
+    if arch == "resnet34":
+        weights = models.ResNet34_Weights.IMAGENET1K_V1 if pretrained else None
+        net = models.resnet34(weights=weights)
+        for p in net.parameters():
+            p.requires_grad = False
+        net.fc = nn.Linear(net.fc.in_features, num_classes)
+    elif arch == "resnet50":
+        weights = models.ResNet50_Weights.IMAGENET1K_V1 if pretrained else None
+        net = models.resnet50(weights=weights)
+        for p in net.parameters():
+            p.requires_grad = False
+        net.fc = nn.Linear(net.fc.in_features, num_classes)
+    elif arch == "efficientnet_b0":
+        weights = models.EfficientNet_B0_Weights.IMAGENET1K_V1 if pretrained else None
+        net = models.efficientnet_b0(weights=weights)
+        for p in net.parameters():
+            p.requires_grad = False
+        net.classifier[1] = nn.Linear(net.classifier[1].in_features, num_classes)
+    else:
+        weights = models.ResNet18_Weights.IMAGENET1K_V1 if pretrained else None
+        net = models.resnet18(weights=weights)
+        for p in net.parameters():
+            p.requires_grad = False
+        net.fc = nn.Linear(net.fc.in_features, num_classes)
     return net
 
 
@@ -139,11 +159,12 @@ def train(args):
         num_workers=args.workers, pin_memory=True
     )
 
-    model = build_model(num_classes, pretrained=True).to(device)
-    criterion = nn.CrossEntropyLoss()
+    model = build_model(num_classes, arch=args.arch, pretrained=True).to(device)
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
     # Phase 1: Train only the classifier head
-    optimizer = torch.optim.Adam(model.fc.parameters(), lr=1e-3, weight_decay=1e-4)
+    head_params = model.classifier.parameters() if hasattr(model, "classifier") else model.fc.parameters()
+    optimizer = torch.optim.AdamW(head_params, lr=1e-3, weight_decay=1e-3)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=args.epochs // 2
     )
@@ -274,7 +295,9 @@ def train(args):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train SurfaceAI ResNet-18")
+    parser = argparse.ArgumentParser(description="Train SurfaceAI Neural Defect Classifier")
+    parser.add_argument("--arch", choices=["resnet18", "resnet34", "resnet50", "efficientnet_b0"],
+                        default="resnet18", help="Deep learning architecture backbone")
     parser.add_argument("--data_dir", default="data/NEU-CLS",
                         help="Path to NEU-CLS dataset root")
     parser.add_argument("--epochs", type=int, default=30,

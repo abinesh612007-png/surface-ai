@@ -34,7 +34,13 @@ def init_db():
                 defect_status           TEXT    DEFAULT NULL,
                 model_version           TEXT    NOT NULL DEFAULT 'unknown',
                 damage_percentage       REAL    DEFAULT 0.0,
-                damage_severity         TEXT    DEFAULT 'Minor'
+                damage_severity         TEXT    DEFAULT 'Minor',
+                quality_grade           TEXT    DEFAULT 'Grade B',
+                defect_count            INTEGER DEFAULT 1,
+                defect_density          REAL    DEFAULT 0.0,
+                root_cause              TEXT    DEFAULT NULL,
+                recommended_action      TEXT    DEFAULT NULL,
+                latency_ms              REAL    DEFAULT 0.0
             );
 
             CREATE INDEX IF NOT EXISTS idx_inspections_timestamp
@@ -47,7 +53,13 @@ def init_db():
         # Backward compatibility column migrations for existing databases
         for col_name, col_type in [
             ("damage_percentage", "REAL DEFAULT 0.0"),
-            ("damage_severity", "TEXT DEFAULT 'Minor'")
+            ("damage_severity", "TEXT DEFAULT 'Minor'"),
+            ("quality_grade", "TEXT DEFAULT 'Grade B'"),
+            ("defect_count", "INTEGER DEFAULT 1"),
+            ("defect_density", "REAL DEFAULT 0.0"),
+            ("root_cause", "TEXT DEFAULT NULL"),
+            ("recommended_action", "TEXT DEFAULT NULL"),
+            ("latency_ms", "REAL DEFAULT 0.0"),
         ]:
             try:
                 conn.execute(f"ALTER TABLE inspections ADD COLUMN {col_name} {col_type}")
@@ -68,6 +80,12 @@ def save_inspection(
     model_version: str,
     damage_percentage: float = 0.0,
     damage_severity: str = "Minor",
+    quality_grade: str = "Grade B",
+    defect_count: int = 1,
+    defect_density: float = 0.0,
+    root_cause: str | None = None,
+    recommended_action: str | None = None,
+    latency_ms: float = 0.0,
 ) -> int:
     """Insert a new inspection record and return its id."""
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -77,8 +95,9 @@ def save_inspection(
             INSERT INTO inspections
                 (filename, timestamp_utc, predicted_class, confidence,
                  class_probabilities_json, defect_status, model_version,
-                 damage_percentage, damage_severity)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 damage_percentage, damage_severity, quality_grade,
+                 defect_count, defect_density, root_cause, recommended_action, latency_ms)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 filename,
@@ -90,6 +109,12 @@ def save_inspection(
                 model_version,
                 round(float(damage_percentage), 2),
                 str(damage_severity),
+                str(quality_grade),
+                int(defect_count),
+                round(float(defect_density), 2),
+                root_cause,
+                recommended_action,
+                round(float(latency_ms), 2),
             ),
         )
         return cur.lastrowid
@@ -369,6 +394,12 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
         d["class_probabilities"] = json.loads(d.get("class_probabilities_json", "{}"))
     except (json.JSONDecodeError, TypeError):
         d["class_probabilities"] = {}
+    d.setdefault("quality_grade", "Grade B")
+    d.setdefault("defect_count", 1)
+    d.setdefault("defect_density", 0.0)
+    d.setdefault("root_cause", None)
+    d.setdefault("recommended_action", None)
+    d.setdefault("latency_ms", 0.0)
     return d
 
 

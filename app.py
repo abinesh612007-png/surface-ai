@@ -119,9 +119,12 @@ def inspect():
     except Exception as exc:
         return jsonify({"error": f"File cannot be decoded as an image: {exc}"}), 400
 
+    use_tta = request.args.get("use_tta", "").lower() in ("true", "1") or \
+              request.form.get("use_tta", "").lower() in ("true", "1")
+
     # Run inference & damage analysis
     try:
-        result = analyze_defect(image_bytes, include_gradcam=True)
+        result = analyze_defect(image_bytes, include_gradcam=True, use_tta=use_tta)
     except RuntimeError as exc:
         return jsonify({"error": str(exc), "model_unavailable": True}), 503
     except ValueError as exc:
@@ -130,7 +133,7 @@ def inspect():
         log.exception("Inference error")
         return jsonify({"error": f"Inference failed: {exc}"}), 500
 
-    # Persist inspection
+    # Persist inspection with rich damage telemetry
     inspection_id = db.save_inspection(
         filename=filename,
         predicted_class=result["predicted_class"],
@@ -140,6 +143,12 @@ def inspect():
         model_version=result["model_version"],
         damage_percentage=result.get("damage_percentage", 0.0),
         damage_severity=result.get("damage_severity", "Minor"),
+        quality_grade=result.get("quality_grade", "Grade B"),
+        defect_count=result.get("defect_count", 1),
+        defect_density=result.get("defect_density", 0.0),
+        root_cause=result.get("root_cause"),
+        recommended_action=result.get("recommended_action"),
+        latency_ms=result.get("latency_ms", 0.0),
     )
 
     gradcam_b64 = None
@@ -154,6 +163,18 @@ def inspect():
         "accuracy_percent": result["accuracy_percent"],
         "damage_percentage": result["damage_percentage"],
         "damage_severity": result["damage_severity"],
+        "quality_grade": result.get("quality_grade"),
+        "grade_code": result.get("grade_code"),
+        "grade_badge": result.get("grade_badge"),
+        "defect_count": result.get("defect_count", 1),
+        "defect_density": result.get("defect_density", 0.0),
+        "aspect_ratio": result.get("aspect_ratio", 1.0),
+        "morphology_type": result.get("morphology_type"),
+        "root_cause": result.get("root_cause"),
+        "recommended_action": result.get("recommended_action"),
+        "standard_spec": result.get("standard_spec"),
+        "latency_ms": result.get("latency_ms", 0.0),
+        "tta_enabled": result.get("tta_enabled", False),
         "defect_status": result["defect_status"],
         "defect_label": result["defect_label"],
         "defect_color": result["defect_color"],
@@ -179,7 +200,7 @@ def camera_scan_frame():
         return jsonify({"error": err}), 400
 
     try:
-        result = analyze_defect(image_bytes, include_gradcam=False)
+        result = analyze_defect(image_bytes, include_gradcam=False, use_tta=False)
     except RuntimeError as exc:
         return jsonify({"error": str(exc), "model_unavailable": True}), 503
     except Exception as exc:
@@ -191,6 +212,15 @@ def camera_scan_frame():
         "accuracy_percent": result["accuracy_percent"],
         "damage_percentage": result["damage_percentage"],
         "damage_severity": result["damage_severity"],
+        "quality_grade": result.get("quality_grade"),
+        "grade_code": result.get("grade_code"),
+        "grade_badge": result.get("grade_badge"),
+        "defect_count": result.get("defect_count", 1),
+        "aspect_ratio": result.get("aspect_ratio", 1.0),
+        "morphology_type": result.get("morphology_type"),
+        "root_cause": result.get("root_cause"),
+        "recommended_action": result.get("recommended_action"),
+        "latency_ms": result.get("latency_ms", 0.0),
         "defect_status": result["defect_status"],
         "defect_label": result["defect_label"],
         "defect_color": result["defect_color"],
@@ -214,7 +244,7 @@ def camera_snapshot():
         return jsonify({"error": err}), 400
 
     try:
-        result = analyze_defect(image_bytes, include_gradcam=True)
+        result = analyze_defect(image_bytes, include_gradcam=True, use_tta=True)
     except Exception as exc:
         return jsonify({"error": f"Snapshot analysis failed: {exc}"}), 500
 
@@ -228,6 +258,12 @@ def camera_snapshot():
         model_version=result["model_version"],
         damage_percentage=result.get("damage_percentage", 0.0),
         damage_severity=result.get("damage_severity", "Minor"),
+        quality_grade=result.get("quality_grade", "Grade B"),
+        defect_count=result.get("defect_count", 1),
+        defect_density=result.get("defect_density", 0.0),
+        root_cause=result.get("root_cause"),
+        recommended_action=result.get("recommended_action"),
+        latency_ms=result.get("latency_ms", 0.0),
     )
 
     gradcam_b64 = None
@@ -242,6 +278,15 @@ def camera_snapshot():
         "accuracy_percent": result["accuracy_percent"],
         "damage_percentage": result["damage_percentage"],
         "damage_severity": result["damage_severity"],
+        "quality_grade": result.get("quality_grade"),
+        "grade_code": result.get("grade_code"),
+        "grade_badge": result.get("grade_badge"),
+        "defect_count": result.get("defect_count", 1),
+        "aspect_ratio": result.get("aspect_ratio", 1.0),
+        "morphology_type": result.get("morphology_type"),
+        "root_cause": result.get("root_cause"),
+        "recommended_action": result.get("recommended_action"),
+        "latency_ms": result.get("latency_ms", 0.0),
         "defect_status": result["defect_status"],
         "defect_label": result["defect_label"],
         "defect_color": result["defect_color"],
@@ -399,7 +444,9 @@ def export_csv():
     def generate():
         header = [
             "id", "filename", "timestamp_utc", "predicted_class",
-            "confidence", "defect_status", "model_version"
+            "confidence", "quality_grade", "damage_percentage", "damage_severity",
+            "defect_count", "root_cause", "recommended_action", "latency_ms",
+            "defect_status", "model_version"
         ]
         yield ",".join(header) + "\r\n"
         for r in rows:
@@ -409,6 +456,13 @@ def export_csv():
                 _csv_safe(r.get("timestamp_utc", "")),
                 _csv_safe(r.get("predicted_class", "")),
                 str(round(r.get("confidence", 0) * 100, 2)) + "%",
+                _csv_safe(r.get("quality_grade", "Grade B")),
+                str(round(float(r.get("damage_percentage", 0.0) or 0.0), 2)) + "%",
+                _csv_safe(r.get("damage_severity", "Minor")),
+                str(r.get("defect_count", 1)),
+                _csv_safe(r.get("root_cause") or "N/A"),
+                _csv_safe(r.get("recommended_action") or "N/A"),
+                str(round(float(r.get("latency_ms", 0.0) or 0.0), 2)),
                 _csv_safe(str(r.get("defect_status") or "N/A")),
                 _csv_safe(r.get("model_version", "")),
             ]) + "\r\n"
